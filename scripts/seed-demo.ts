@@ -151,7 +151,10 @@ async function main() {
       .createMarket({
         marketId,
         statAKey: spec.statAKey,
+        // Period index encoded in the soccer key (key = period*1000 + base).
+        statAPeriod: Math.floor(spec.statAKey / 1000),
         statBKey: spec.statBKey,
+        statBPeriod: spec.statBKey != null ? Math.floor(spec.statBKey / 1000) : null,
         op: binop(spec.op),
         threshold: spec.threshold,
         comparison: cmp(spec.comparison),

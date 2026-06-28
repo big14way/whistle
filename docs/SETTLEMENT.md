@@ -46,9 +46,14 @@ from the stored market fields. The settle handler then does the following, in or
 2. Bind to the right match. It requires
    `fixture_summary.fixture_id == market.fixture_id`. Without this a settler could
    try to prove a stat from a different match.
-3. Bind to the right stat keys. It requires the proof's `stat_a` key to equal
-   `market.stat_a_key`. For a two stat market it requires a second stat whose key
-   equals `market.stat_b_key`. For a single stat market it requires no second stat.
+3. Bind to the right stat keys and periods. It requires the proof's `stat_a` key
+   to equal `market.stat_a_key` AND the proof's `stat_a` period to equal
+   `market.stat_a_period`. For a two stat market it requires a second stat whose key
+   and period equal `market.stat_b_key` and `market.stat_b_period`. For a single
+   stat market it requires no second stat. The oracle's stat leaf carries an
+   independent `period` field, so binding only the key would let a settler prove the
+   same key under a different period to flip the outcome; the period is pinned to
+   stored market state for that reason.
 4. Build the predicate in program. If the settler claims YES, the contract uses the
    stored `(threshold, comparison)`. If the settler claims NO, the contract uses the
    logical negation:

@@ -109,7 +109,9 @@ async function createFixtureAndMarket(opts: MarketOpts = {}) {
     .createMarket({
       marketId,
       statAKey: opts.statAKey ?? 1,
+      statAPeriod: Math.floor((opts.statAKey ?? 1) / 1000),
       statBKey: (opts.statBKey ?? null) as any,
+      statBPeriod: (opts.statBKey != null ? Math.floor(opts.statBKey / 1000) : null) as any,
       op: (opts.op ?? null) as any,
       threshold: opts.threshold ?? 0,
       comparison: (opts.comparison ?? { greaterThan: {} }) as any,
@@ -338,6 +340,9 @@ describe("whistle: real validate_stat CPI settlement (needs DEMO_FIXTURE_ID + Tx
 
     const resp = await client.getStatValidation(fixtureIdNum, seq, statKey, statKey2);
     const provenValue = (resp as any).statToProve.value as number;
+    // Use the oracle's actual reported period so the settle period binding matches the proof.
+    const periodA = (resp as any).statToProve.period as number;
+    const periodB = (resp as any).statToProve2?.period ?? 0;
     // Choose a threshold the proven value satisfies on the YES side.
     const threshold = Number(process.env.TEST_THRESHOLD ?? provenValue - 1);
 
@@ -359,7 +364,9 @@ describe("whistle: real validate_stat CPI settlement (needs DEMO_FIXTURE_ID + Tx
       .createMarket({
         marketId,
         statAKey: statKey,
+        statAPeriod: periodA,
         statBKey: (statKey2 ?? null) as any,
+        statBPeriod: (statKey2 ? periodB : null) as any,
         op: (statKey2 ? { add: {} } : null) as any,
         threshold,
         comparison: { greaterThan: {} } as any,
@@ -430,6 +437,7 @@ describe("whistle: real validate_stat CPI settlement (needs DEMO_FIXTURE_ID + Tx
     const statKey = Number(process.env.TEST_STAT_KEY);
     const resp = await client.getStatValidation(fixtureIdNum, seq, statKey);
     const provenValue = (resp as any).statToProve.value as number;
+    const periodA = (resp as any).statToProve.period as number;
 
     if (!mint) mint = await createMint(connection, deployer, deployer.publicKey, null, 6);
     const fixtureId = new BN(fixtureIdNum + 2_000_000);
@@ -448,7 +456,9 @@ describe("whistle: real validate_stat CPI settlement (needs DEMO_FIXTURE_ID + Tx
       .createMarket({
         marketId,
         statAKey: statKey,
+        statAPeriod: periodA,
         statBKey: null as any,
+        statBPeriod: null as any,
         op: null as any,
         threshold: provenValue - 1, // YES is true (value > value-1)
         comparison: { greaterThan: {} } as any,

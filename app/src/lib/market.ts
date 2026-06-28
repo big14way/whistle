@@ -12,7 +12,9 @@ export interface MarketView {
   creator: string;
   stakeMint: string;
   statAKey: number;
+  statAPeriod: number;
   statBKey: number;
+  statBPeriod: number;
   hasStatB: boolean;
   op: "add" | "subtract";
   threshold: number;
@@ -42,7 +44,9 @@ export function mapMarket(address: string, account: any): MarketView {
     creator: account.creator.toBase58(),
     stakeMint: account.stakeMint.toBase58(),
     statAKey: account.statAKey,
+    statAPeriod: account.statAPeriod,
     statBKey: account.statBKey,
+    statBPeriod: account.statBPeriod,
     hasStatB: account.hasStatB,
     op: enumName(account.op, "add") as "add" | "subtract",
     threshold: account.threshold,

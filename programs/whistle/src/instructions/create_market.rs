@@ -12,7 +12,11 @@ pub struct CreateMarketArgs {
     /// Must equal fixture.market_count.
     pub market_id: u32,
     pub stat_a_key: u32,
+    /// The period the oracle leaf for stat A must carry (bound at settle).
+    pub stat_a_period: i32,
     pub stat_b_key: Option<u32>,
+    /// The period for stat B (required when stat_b_key is set).
+    pub stat_b_period: Option<i32>,
     pub op: Option<BinaryOp>,
     pub threshold: i32,
     pub comparison: Comparison,
@@ -92,14 +96,15 @@ pub fn handler(ctx: Context<CreateMarket>, args: CreateMarketArgs) -> Result<()>
 
     // Predicate invariants for two stat markets.
     let has_stat_b = args.stat_b_key.is_some();
-    let (stat_b_key, op) = if has_stat_b {
+    let (stat_b_key, stat_b_period, op) = if has_stat_b {
         let key = args.stat_b_key.unwrap();
         require!(key != 0, WhistleError::ZeroSecondStatKey);
         let op = args.op.ok_or(WhistleError::MissingOperator)?;
-        (key, op)
+        let period = args.stat_b_period.ok_or(WhistleError::MissingSecondStat)?;
+        (key, period, op)
     } else {
-        // op is ignored for single stat markets; store a deterministic default.
-        (0u32, BinaryOp::Add)
+        // op and stat_b_period are ignored for single stat markets; store defaults.
+        (0u32, 0i32, BinaryOp::Add)
     };
 
     let market = &mut ctx.accounts.market;
@@ -111,7 +116,9 @@ pub fn handler(ctx: Context<CreateMarket>, args: CreateMarketArgs) -> Result<()>
     market.vault_authority_bump = ctx.bumps.vault_authority;
 
     market.stat_a_key = args.stat_a_key;
+    market.stat_a_period = args.stat_a_period;
     market.stat_b_key = stat_b_key;
+    market.stat_b_period = stat_b_period;
     market.has_stat_b = has_stat_b;
     market.op = op;
     market.threshold = args.threshold;

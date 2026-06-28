@@ -61,7 +61,9 @@ pub fn handler(ctx: Context<Settle>, args: SettleArgs) -> Result<()> {
     // Snapshot the immutable predicate fields we need for the CPI.
     let m_fixture_id = ctx.accounts.market.fixture_id;
     let m_stat_a_key = ctx.accounts.market.stat_a_key;
+    let m_stat_a_period = ctx.accounts.market.stat_a_period;
     let m_stat_b_key = ctx.accounts.market.stat_b_key;
+    let m_stat_b_period = ctx.accounts.market.stat_b_period;
     let m_has_stat_b = ctx.accounts.market.has_stat_b;
     let m_op = ctx.accounts.market.op;
     let m_threshold = ctx.accounts.market.threshold;
@@ -73,15 +75,26 @@ pub fn handler(ctx: Context<Settle>, args: SettleArgs) -> Result<()> {
         WhistleError::FixtureMismatch
     );
 
-    // 3. Bind the proof to the right stat(s).
+    // 3. Bind the proof to the right stat(s), including the period. The oracle
+    // leaf carries an independent period field; binding only the key would let a
+    // settler prove the same key under a different period to flip the outcome, so
+    // the period is pinned to the stored market value too.
     require!(
         args.stat_a.stat_to_prove.key == m_stat_a_key,
+        WhistleError::StatKeyMismatch
+    );
+    require!(
+        args.stat_a.stat_to_prove.period == m_stat_a_period,
         WhistleError::StatKeyMismatch
     );
     if m_has_stat_b {
         let stat_b = args.stat_b.as_ref().ok_or(WhistleError::MissingSecondStat)?;
         require!(
             stat_b.stat_to_prove.key == m_stat_b_key,
+            WhistleError::StatKeyMismatch
+        );
+        require!(
+            stat_b.stat_to_prove.period == m_stat_b_period,
             WhistleError::StatKeyMismatch
         );
     } else {

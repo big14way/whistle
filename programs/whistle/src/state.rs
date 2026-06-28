@@ -66,10 +66,17 @@ pub struct Market {
     /// Bump for the vault_authority PDA, stored so claim can sign payouts.
     pub vault_authority_bump: u8,
 
-    // Predicate definition (the question). Period is encoded inside the stat keys.
+    // Predicate definition (the question).
     pub stat_a_key: u32,
+    /// The match period the oracle leaf must carry for stat A. Bound at settle so a
+    /// settler cannot prove the same stat key under a different period to flip the
+    /// outcome. For the soccer feed this is the period index encoded in the key
+    /// (floor(key / 1000)); the creator sets it to the value the oracle reports.
+    pub stat_a_period: i32,
     /// 0 when single stat. See has_stat_b.
     pub stat_b_key: u32,
+    /// The period the oracle leaf must carry for stat B (meaningful only when has_stat_b).
+    pub stat_b_period: i32,
     pub has_stat_b: bool,
     /// Meaningful only when has_stat_b is true.
     pub op: BinaryOp,
