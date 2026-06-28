@@ -1,0 +1,25 @@
+[package]
+name = "whistle"
+version = "0.1.0"
+description = "Trustless parametric prop settlement, settled by a CPI into TxLINE validate_stat."
+edition = "2021"
+# The SBF toolchain (platform-tools v1.43) ships rustc 1.79. Declaring this MSRV
+# lets the MSRV aware resolver pick dependency versions that compile on 1.79,
+# avoiding the edition2024 / rust 1.85 crate creep. The lockfile is committed.
+rust-version = "1.79.0"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "whistle"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+[dependencies]
+anchor-lang = { version = "0.31.1", features = ["init-if-needed"] }
+anchor-spl = "0.31.1"
