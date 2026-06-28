@@ -1,0 +1,92 @@
+import { BetPanel } from "./BetPanel";
+import { ClaimPanel } from "./ClaimPanel";
+import { ProofReceipt } from "./ProofReceipt";
+import type { DemoWallet } from "../lib/demoWallets";
+import { type MarketView, impliedProbs, marketPhase, restate } from "../lib/market";
+import type { SettlementReceipt } from "../lib/receipt";
+import type { WalletBalances } from "../state/useDemoWallets";
+
+function fmtCountdown(sec: number): string {
+  if (sec <= 0) return "0:00";
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function StateBadge({ market, phase }: { market: MarketView; phase: string }) {
+  if (market.state === "settledYes") return <span className="badge yes">Settled YES</span>;
+  if (market.state === "settledNo") return <span className="badge no">Settled NO</span>;
+  if (market.state === "voided") return <span className="badge voided">Voided</span>;
+  if (phase === "open") return <span className="badge open">Open</span>;
+  return <span className="badge locked">Locked</span>;
+}
+
+export function MarketCard({
+  market,
+  wallets,
+  balances,
+  nowSec,
+  receipt,
+  onAction,
+  onOpenSettle,
+}: {
+  market: MarketView;
+  wallets: DemoWallet[];
+  balances: Record<string, WalletBalances>;
+  nowSec: number;
+  receipt?: SettlementReceipt;
+  onAction: () => void;
+  onOpenSettle: (m: MarketView) => void;
+}) {
+  const phase = marketPhase(market, nowSec);
+  const probs = impliedProbs(market);
+  const yesPct = Math.round(probs.yes * 100);
+  const noPct = 100 - yesPct;
+
+  return (
+    <div className="card market">
+      <div className="head">
+        <div>
+          <div className="title">{market.title}</div>
+          <div className="restate mono">{restate(market)}</div>
+        </div>
+        <StateBadge market={market} phase={phase} />
+      </div>
+
+      <div className="split">
+        <div className="seg yes" style={{ flexBasis: `${Math.max(yesPct, 12)}%` }}>
+          YES {market.totalYes.toFixed(0)} ({yesPct}%)
+        </div>
+        <div className="seg no" style={{ flexBasis: `${Math.max(noPct, 12)}%` }}>
+          ({noPct}%) {market.totalNo.toFixed(0)} NO
+        </div>
+      </div>
+
+      {phase === "open" && (
+        <>
+          <div className="countdown">Locks in {fmtCountdown(market.lockTs - nowSec)}</div>
+          <BetPanel market={market} wallets={wallets} balances={balances} onPlaced={onAction} />
+        </>
+      )}
+
+      {phase === "locked" && (
+        <div className="banner">
+          Betting locked. Settle available in {fmtCountdown(market.resolveAfterTs - nowSec)}.
+        </div>
+      )}
+
+      {phase === "resolvable" && (
+        <button className="btn primary block" onClick={() => onOpenSettle(market)}>
+          Settle now (prove on chain)
+        </button>
+      )}
+
+      {(phase === "settled" || phase === "voided") && (
+        <div className="stack" style={{ marginTop: 4 }}>
+          <ClaimPanel market={market} wallets={wallets} onClaimed={onAction} />
+          {receipt && <ProofReceipt receipt={receipt} />}
+        </div>
+      )}
+    </div>
+  );
+}
