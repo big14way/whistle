@@ -133,7 +133,17 @@ async function createFixtureAndMarket(opts: MarketOpts = {}) {
     })
     .rpc();
 
-  return { fixtureId, fixture, marketId, market, vault, vaultAuthority };
+  return {
+    fixtureId,
+    fixture,
+    marketId,
+    market,
+    vault,
+    vaultAuthority,
+    lockTs: now + (opts.lockOffset ?? 30),
+    resolveAfterTs: now + (opts.resolveOffset ?? 32),
+    voidAfterTs: now + (opts.voidOffset ?? 34),
+  };
 }
 
 async function join(market: PublicKey, bettor: Keypair, side: boolean, amount: BN) {
@@ -224,10 +234,11 @@ describe("whistle: void, timing, refund, double claim (no oracle needed)", () =>
   });
 
   it("accepts two sided bets and tracks parimutuel pools", async function () {
-    this.timeout(90000);
-    const { market } = await createFixtureAndMarket({ lockOffset: 40, resolveOffset: 42, voidOffset: 44 });
+    this.timeout(150000);
+    // Bettors first (funding is slow under RPC throttling), then a generous lock.
     const a = await makeBettor(100);
     const b = await makeBettor(100);
+    const { market } = await createFixtureAndMarket({ lockOffset: 90, resolveOffset: 92, voidOffset: 94 });
     await join(market, a, true, USDC(70));
     await join(market, b, false, USDC(30));
     const m = await program.account.market.fetch(market);
@@ -269,10 +280,10 @@ describe("whistle: void, timing, refund, double claim (no oracle needed)", () =>
   });
 
   it("rejects void before void_after_ts, then voids after and refunds both bettors", async function () {
-    this.timeout(120000);
-    const { market } = await createFixtureAndMarket({ lockOffset: 8, resolveOffset: 9, voidOffset: 12 });
+    this.timeout(200000);
     const a = await makeBettor(100);
     const b = await makeBettor(100);
+    const { market, voidAfterTs } = await createFixtureAndMarket({ lockOffset: 50, resolveOffset: 52, voidOffset: 55 });
     await join(market, a, true, USDC(40));
     await join(market, b, false, USDC(60));
     const aBefore = await usdcBalance(a.publicKey);
@@ -289,7 +300,7 @@ describe("whistle: void, timing, refund, double claim (no oracle needed)", () =>
       assert.match(e.toString(), /TooEarlyToVoid|Too early to void/);
     }
 
-    await sleep(13000);
+    while (nowSec() < voidAfterTs + 2) await sleep(3000);
     await program.methods.voidMarket().accountsPartial({ market, caller: deployer.publicKey }).rpc();
     const m = await program.account.market.fetch(market);
     assert.ok(m.state.voided !== undefined, "market should be Voided");
@@ -347,7 +358,18 @@ describe("whistle: real validate_stat CPI settlement (needs DEMO_FIXTURE_ID + Tx
     const threshold = Number(process.env.TEST_THRESHOLD ?? provenValue - 1);
 
     if (!mint) mint = await createMint(connection, deployer, deployer.publicKey, null, 6);
-    const fixtureId = new BN(fixtureIdNum + 1_000_000); // avoid colliding with the seed fixture
+
+    // Create and fund the bettors FIRST, since funding is slow on the public RPC
+    // (rate limited). Doing it before the market means the slow part does not eat
+    // into the lock window. Asymmetric pools: 70 YES (two wallets), 30 NO.
+    const a = await makeBettor(100);
+    const a2 = await makeBettor(100);
+    const b = await makeBettor(100);
+
+    // Use the REAL fixture id so the proof's fixture_summary.fixture_id matches the
+    // market's fixture_id. The fixture may already exist (from the seed); the catch
+    // handles that, and we just add another market to it.
+    const fixtureId = new BN(fixtureIdNum);
     const [fixture] = fixturePda(programId, fixtureId);
     await program.methods
       .initializeFixture(fixtureId)
@@ -360,6 +382,7 @@ describe("whistle: real validate_stat CPI settlement (needs DEMO_FIXTURE_ID + Tx
     const [vaultAuthority] = vaultAuthorityPda(programId, market);
     const [vault] = vaultPda(programId, market);
     const now = nowSec();
+    const resolveAfter = now + 70;
     await program.methods
       .createMarket({
         marketId,
@@ -370,8 +393,8 @@ describe("whistle: real validate_stat CPI settlement (needs DEMO_FIXTURE_ID + Tx
         op: (statKey2 ? { add: {} } : null) as any,
         threshold,
         comparison: { greaterThan: {} } as any,
-        lockTs: new BN(now + 6),
-        resolveAfterTs: new BN(now + 8),
+        lockTs: new BN(now + 60),
+        resolveAfterTs: new BN(resolveAfter),
         voidAfterTs: new BN(now + 24 * 3600),
         title: "Real CPI market",
       } as any)
@@ -388,15 +411,11 @@ describe("whistle: real validate_stat CPI settlement (needs DEMO_FIXTURE_ID + Tx
       })
       .rpc();
 
-    // Asymmetric pools: 70 YES (two wallets), 30 NO.
-    const a = await makeBettor(100);
-    const a2 = await makeBettor(100);
-    const b = await makeBettor(100);
     await join(market, a, true, USDC(40));
     await join(market, a2, true, USDC(30));
     await join(market, b, false, USDC(30));
 
-    await sleep(9000);
+    while (nowSec() < resolveAfter + 2) await sleep(3000);
 
     const args = shapeSettleArgs(resp, true);
     const rootsPda = deriveRootsPda(
@@ -440,7 +459,11 @@ describe("whistle: real validate_stat CPI settlement (needs DEMO_FIXTURE_ID + Tx
     const periodA = (resp as any).statToProve.period as number;
 
     if (!mint) mint = await createMint(connection, deployer, deployer.publicKey, null, 6);
-    const fixtureId = new BN(fixtureIdNum + 2_000_000);
+
+    const a = await makeBettor(100);
+    const b = await makeBettor(100);
+
+    const fixtureId = new BN(fixtureIdNum); // real fixture id so the proof binds
     const [fixture] = fixturePda(programId, fixtureId);
     await program.methods
       .initializeFixture(fixtureId)
@@ -452,6 +475,7 @@ describe("whistle: real validate_stat CPI settlement (needs DEMO_FIXTURE_ID + Tx
     const [vaultAuthority] = vaultAuthorityPda(programId, market);
     const [vault] = vaultPda(programId, market);
     const now = nowSec();
+    const resolveAfter = now + 70;
     await program.methods
       .createMarket({
         marketId,
@@ -462,8 +486,8 @@ describe("whistle: real validate_stat CPI settlement (needs DEMO_FIXTURE_ID + Tx
         op: null as any,
         threshold: provenValue - 1, // YES is true (value > value-1)
         comparison: { greaterThan: {} } as any,
-        lockTs: new BN(now + 6),
-        resolveAfterTs: new BN(now + 8),
+        lockTs: new BN(now + 60),
+        resolveAfterTs: new BN(resolveAfter),
         voidAfterTs: new BN(now + 24 * 3600),
         title: "Wrong claim market",
       } as any)
@@ -473,11 +497,9 @@ describe("whistle: real validate_stat CPI settlement (needs DEMO_FIXTURE_ID + Tx
       })
       .rpc();
 
-    const a = await makeBettor(100);
-    const b = await makeBettor(100);
     await join(market, a, true, USDC(50));
     await join(market, b, false, USDC(50));
-    await sleep(9000);
+    while (nowSec() < resolveAfter + 2) await sleep(3000);
 
     // Claim NO (false), which is the wrong side. The negated predicate is false, so
     // validate_stat returns false or aborts, and settle must fail.
