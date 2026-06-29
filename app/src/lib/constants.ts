@@ -23,6 +23,13 @@ export const RPC_URL: Record<Cluster, string> = {
   "mainnet-beta": "https://api.mainnet-beta.solana.com",
 };
 
+/// TxL subscription token mint (Token-2022), used by the free World Cup subscribe.
+/// Confirmed from the addresses doc.
+export const TXL_TOKEN_MINT: Record<Cluster, string> = {
+  devnet: "4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG",
+  "mainnet-beta": "Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL",
+};
+
 /// PDA seed for the txoracle daily_scores_roots account.
 export const DAILY_SCORES_ROOTS_SEED = "daily_scores_roots";
 

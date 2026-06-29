@@ -12,7 +12,14 @@
 // RESOLVE_SECS, SOLANA_CLUSTER, RPC_URL, TXLINE_API_BASE.
 
 import { BN } from "@coral-xyz/anchor";
-import { Keypair, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
+import {
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  SYSVAR_RENT_PUBKEY,
+  Transaction,
+  sendAndConfirmTransaction,
+} from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, getOrCreateAssociatedTokenAccount, getAccount } from "@solana/spl-token";
 import { RPC_URL } from "../app/src/lib/constants";
 import { getConnection, getProgram, getProvider } from "./lib/anchor";
@@ -53,15 +60,22 @@ const MARKET_SPECS: MarketSpec[] = [
 const cmp = (s: Cmp): any => (s === "greaterThan" ? { greaterThan: {} } : { lessThan: {} });
 const binop = (s: Op | null): any => (s == null ? null : s === "add" ? { add: {} } : { subtract: {} });
 
-async function ensureSol(connection: ReturnType<typeof getConnection>, who: PublicKey, minSol: number) {
-  const bal = await connection.getBalance(who);
-  if (bal >= minSol * 1e9) return;
-  try {
-    const sig = await connection.requestAirdrop(who, Math.max(2, minSol) * 1e9);
-    await connection.confirmTransaction(sig, "confirmed");
-  } catch (e) {
-    console.warn(`airdrop for ${who.toBase58()} failed, continuing:`, String(e).slice(0, 100));
-  }
+// Fund a wallet by transferring SOL from the deployer. Devnet airdrops are
+// rate limited and unreliable, so the seed funds the demo wallets directly from
+// the deployer (which holds SOL). Demo wallets need SOL to pay bet/claim fees.
+async function fundSol(
+  connection: ReturnType<typeof getConnection>,
+  deployer: Keypair,
+  to: PublicKey,
+  sol: number,
+) {
+  const bal = await connection.getBalance(to);
+  const need = Math.round(sol * 1e9) - bal;
+  if (need <= 0) return;
+  const tx = new Transaction().add(
+    SystemProgram.transfer({ fromPubkey: deployer.publicKey, toPubkey: to, lamports: need }),
+  );
+  await sendAndConfirmTransaction(connection, tx, [deployer], { commitment: "confirmed" });
 }
 
 async function loadOrCreateWallet(
@@ -75,13 +89,13 @@ async function loadOrCreateWallet(
   const existing = wallets[name];
   if (existing) {
     const kp = keypairFromSecret(existing);
-    await ensureSol(connection, kp.publicKey, 0.1);
+    await fundSol(connection, deployer, kp.publicKey, 0.06);
     await getOrCreateAssociatedTokenAccount(connection, deployer, mint, kp.publicKey);
     return kp;
   }
   const kp = Keypair.generate();
   writeDemoWallets({ [name]: Array.from(kp.secretKey) });
-  await ensureSol(connection, kp.publicKey, 0.2);
+  await fundSol(connection, deployer, kp.publicKey, 0.08);
   await mintToOwner(connection, deployer, mint, mintAuthority, kp.publicKey, 1000);
   console.log(`created ${name}: ${kp.publicKey.toBase58()} funded with 1000 mock USDC`);
   return kp;
@@ -96,10 +110,11 @@ async function main() {
   const program = getProgram(provider);
 
   console.log("cluster:", cluster, "| program:", program.programId.toBase58());
-  await ensureSol(connection, deployer.publicKey, 1);
 
   const { mint, mintAuthority } = await ensureMockUsdc(connection, deployer);
   console.log("mock USDC mint:", mint.toBase58());
+  // Fund the mint authority a little SOL so the frontend Fund button can mint.
+  await fundSol(connection, deployer, mintAuthority.publicKey, 0.1);
 
   const bettorA = await loadOrCreateWallet(connection, deployer, mint, mintAuthority, "bettorA");
   const bettorB = await loadOrCreateWallet(connection, deployer, mint, mintAuthority, "bettorB");

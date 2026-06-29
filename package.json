@@ -7,6 +7,8 @@
     "mock-usdc": "tsx scripts/create-mock-usdc.ts",
     "seed": "tsx scripts/seed-demo.ts",
     "fetch-validation": "tsx scripts/fetch-validation.ts",
+    "txline-auth": "tsx scripts/txline-auth.ts",
+    "find-fixture": "tsx scripts/find-fixture.ts",
     "probe": "tsx scripts/probe-oracle.ts",
     "test": "anchor test --skip-local-validator --skip-deploy",
     "test:ts": "ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts",

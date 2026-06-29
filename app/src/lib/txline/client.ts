@@ -83,16 +83,28 @@ export class TxlineClient {
       body: JSON.stringify({ txSig, walletSignature, leagues }),
     });
     if (!res.ok) throw new Error(`token/activate failed: ${res.status} ${await safeText(res)}`);
-    const body = await res.json();
-    const apiToken = body.apiToken ?? body.api_token ?? body.token;
+    // The endpoint may return the token as JSON ({ token } / { apiToken }) or as a
+    // raw plain text string. Handle both.
+    const text = await res.text();
+    let apiToken: string | undefined;
+    try {
+      const body = JSON.parse(text);
+      apiToken = typeof body === "string" ? body : body.apiToken ?? body.api_token ?? body.token;
+    } catch {
+      apiToken = text.trim();
+    }
     if (!apiToken) throw new Error("token/activate did not return an apiToken");
     this.apiToken = apiToken;
     return apiToken;
   }
 
   private headers(): Record<string, string> {
+    // Confirmed against the live devnet API: data calls authenticate with the jwt
+    // as the bearer and the apiToken in X-Api-Token. We prefer the jwt for the
+    // bearer, falling back to the apiToken if only that is available.
     const h: Record<string, string> = {};
-    if (this.jwt) h["Authorization"] = `Bearer ${this.jwt}`;
+    const bearer = this.jwt ?? this.apiToken;
+    if (bearer) h["Authorization"] = `Bearer ${bearer}`;
     if (this.apiToken) h["X-Api-Token"] = this.apiToken;
     return h;
   }

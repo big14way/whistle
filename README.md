@@ -108,23 +108,38 @@ TxLINE feedback notes below.
 
 ```bash
 pnpm install
-anchor keys sync                       # reconcile declare_id with the deploy keypair
 anchor build
 anchor deploy --provider.cluster devnet
 pnpm mock-usdc                         # deploy the mock USDC mint, writes app/src/config.generated.json
-pnpm seed                              # fixture + three markets + three funded demo wallets
+
+# TxLINE World Cup free tier access (subscribes on chain, no TxL tokens needed):
+pnpm txline-auth                       # caches jwt + apiToken to .txline-token-cache.json
+pnpm find-fixture                      # finds a real (fixtureId, seq, statKey, statKey2) with anchored stats
+
+# Milestone 0 oracle CPI gate (run before relying on the CPI):
+pnpm probe <fixtureId> <seq> <statKey> # calls probe_validate via real .rpc(), asserts validate_stat returns true
+
+DEMO_FIXTURE_ID=<fixtureId> pnpm seed  # fixture + four markets + three funded demo wallets
 pnpm app                               # start the frontend
-```
-
-The Milestone 0 oracle CPI gate (run first, before relying on the CPI):
-
-```bash
-pnpm probe                             # fetch a real stat-validation payload and call probe_validate via .rpc()
 ```
 
 The frontend reads `app/src/config.generated.json` (program id, mock USDC mint,
 cluster, API base URL) and `app/src/demo-wallets.generated.json` (the three funded
-demo wallets), both written by the scripts and both gitignored.
+demo wallets), both written by the scripts and both gitignored. In the app, click
+"Set tokens" and paste the jwt and apiToken from `pnpm txline-auth` to enable Replay,
+Live, and the real settle.
+
+### Live deployment (devnet)
+
+| Thing | Value |
+| --- | --- |
+| Whistle program | `9zhvjPzcUw4DZYBB7qSQ92pXyupkfV8ircrHW6dMAJpW` |
+| Mock USDC mint | `AjUYguAuwip6sqs3SimPGv4QLLuuEs3nwmUraTYN6v9Q` |
+| Demo fixture | `17588323` (a completed World Cup fixture, 4 markets) |
+| Milestone 0 gate | PASSED, `validate_stat` returns true from a real CPI (see docs/ORACLE_FACTS.md) |
+
+The oracle CPI is proven on chain: `probe_validate` returned `true` for a satisfied
+predicate and `false` for an unsatisfied one, both from real `.rpc()` transactions.
 
 ## TxLINE feedback notes
 

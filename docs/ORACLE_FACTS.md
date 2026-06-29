@@ -108,15 +108,41 @@ Merkle proof is the real guard: a wrong roots account makes validate_stat fail).
 `settle` (and `probe_validate`) require a `ComputeBudgetProgram.setComputeUnitLimit({ units: 1_400_000 })`
 pre-instruction. Merkle verification is compute heavy.
 
-## false vs abort behavior (to confirm empirically in the deploy phase)
+## false vs abort behavior (CONFIRMED on devnet)
 
-Per the idea doc, some failure paths abort the transaction (`PredicateFailed = 6021`,
-`InvalidStatProof = 6023`) rather than returning `false`. Whistle is safe either way: the
-settler only ever submits the predicate that should be true for the side they claim. If the
-claim is correct the predicate holds and the bool is true; if the claim is wrong that side's
-predicate is false, so either the bool is false (the `require!(verified)` fails) or the CPI
-aborts (the whole transaction fails). Either path leaves state unchanged. `probe_validate`
-plus `scripts/probe-oracle.ts` record the actual behavior during the deploy phase.
+Resolved empirically via `scripts/probe-oracle.ts` against the deployed program on
+devnet (fixture 17588323, seq 944, statKey 7):
+
+- A valid proof with a SATISFIED predicate (5 > 4): `validate_stat` returns `true`.
+  Real .rpc() tx: 576ENK6HMT1HfXhnh583ZdB9USodM37ThSYSCBpERWN6T7DnaGcFrmKD5rRQSWp2tN19D2imsxSmUXeP596r3XL9
+- A valid proof with an UNSATISFIED predicate (5 > 1005): `validate_stat` returns
+  `false` (it does NOT abort).
+  Real .rpc() tx: 2kYYHXEJWoJHwpi5WarvRATA5qoxZk1g4FgaRP92yynWjFvaRYXQ37YSsj1Q3QXNK9vbhbmuDAnQ5MFWweWXUagP
+
+So a valid-but-unsatisfied predicate returns `false`, which `require!(verified)`
+catches. (An INVALID proof aborts.) Whistle is safe either way: the settler only ever
+submits the predicate that should be true for the side they claim, so a wrong claim
+gets `false` (require fails) or an abort, leaving state unchanged.
+
+## Auth scheme (CONFIRMED on devnet)
+
+Data calls authenticate with BOTH headers:
+`Authorization: Bearer {jwt}` AND `X-Api-Token: {apiToken}`.
+(Bearer jwt alone gives "Missing API token"; the World Cup doc's "Bearer apiToken"
+phrasing is for a different context.) `token/activate` returns the API token as a
+plain text string (not JSON). The free subscribe needs the user's TxL Token-2022 ATA
+to exist first (the instruction does not create it).
+
+## Proof shape (CONFIRMED from a real two stat payload)
+
+From `GET /api/scores/stat-validation?fixtureId=17588323&seq=944&statKey=7&statKey2=8`:
+- proof node hashes are JSON number arrays of length 32 (not hex or base64).
+- `eventStatRoot` is a number array, shared by BOTH stats (there is no `eventStatRoot2`).
+- `subTreeProof` can be empty (length 0); `mainTreeProof`, `statProof`, `statProof2`
+  are present.
+- top level `ts` equals `summary.updateStats.minTimestamp`, so we use minTimestamp for
+  both the `ts` argument and the epochDay roots derivation.
+- `statToProve.period` is `0` for full game keys, matching `floor(key / 1000)`.
 
 ## Soccer feed encoding (confirmed)
 
@@ -173,32 +199,51 @@ in the deploy phase (`TXLINE_API_BASE` env), defaulting to the devnet base above
 
 Source: https://txline-docs.txodds.com/documentation/worldcup.md and the quickstart.
 
-## Known good (fixtureId, seq, statKey[, statKey2]) triple
+## Known good (fixtureId, seq, statKey[, statKey2]) triple (CONFIRMED)
 
-TO BE FILLED in the deploy phase from a real `GET /api/scores/stat-validation` call
-against a completed or in progress World Cup or International Friendly fixture (picked from
-`/api/scores/snapshot` or the schedule page). Record the triple here so the headline test
-and the demo seed use a known outcome.
+Discovered by scanning `/api/scores/updates/{epochDay}/{hour}/{interval}` for an
+anchored day and confirmed with `stat-validation`. Devnet, completed match:
 
 ```
-fixtureId = <fill>
-seq       = <fill>
-statKey   = <fill>
-statKey2  = <fill or none>
+fixtureId = 17588323   (a completed World Cup fixture, anchored on epochDay 20631)
+seq       = 944
+statKey   = 7          (Participant 1 corners, full game, value 5)
+statKey2  = 8          (Participant 2 corners, full game, value 8)
 ```
 
-## Mock USDC mint
+Proven values at seq 944: P1 goals (key 1) = 1, P2 goals (key 2) = 5, P1 corners
+(key 7) = 5, P2 corners (key 8) = 8. So total corners 13 (over 9.5 is YES), total
+goals 6 (over 2.5 is YES), margin P1 by 2+ is NO, P1 to score is YES. The seed uses
+this fixture, so three of the four demo markets settle YES.
 
-Written by `scripts/create-mock-usdc.ts` into `app/src/config.generated.json` and echoed
-here in the deploy phase:
+The daily_scores_roots PDA for epochDay 20631 (minTimestamp 1782536731866) is
+`BByGFqzPF3Ks6GjWMUZcvzY9ShMFQrdDcyf1vcAi67oe` and exists on devnet.
+
+Note: the devnet `/api/fixtures/snapshot` lists UPCOMING fixtures (all "scheduled");
+completed fixtures with anchored stats are found via the `scores/updates` windows on
+past anchored days (`scripts/find-fixture.ts` automates this).
+
+## TxL subscription (free World Cup tier)
 
 ```
-mint          = <fill>
-mintAuthority = <fill>
+devnet TxL mint  = 4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG (Token-2022)
+pricing_matrix   = B4hHn1FpD1YPPrcM4yUrQhBPF18zFWgijHLTsumGzeKi  (seeds ["pricing_matrix"])
+token_treasury   = Eqqd7rZQGzn2HA9L11NwBMhknxArM3L4KETyUuujK3LB  (seeds ["token_treasury_v2"])
+```
+
+`scripts/txline-auth.ts` runs the full free tier flow (subscribe, guest/start, sign,
+activate) and caches the jwt and apiToken to `.txline-token-cache.json`.
+
+## Mock USDC mint (CONFIRMED, devnet)
+
+```
+mint          = AjUYguAuwip6sqs3SimPGv4QLLuuEs3nwmUraTYN6v9Q
+mintAuthority = 6nuFo7QAJAspQH62MXBP3Dwk7fmdCTEDwxx1vaMhvJCe (dedicated, not the deployer)
 decimals      = 6
 ```
 
-## Whistle program id
+## Whistle program id (DEPLOYED, devnet)
 
-`9zhvjPzcUw4DZYBB7qSQ92pXyupkfV8ircrHW6dMAJpW` (devnet). Run `anchor keys sync` after the
-first build to confirm `declare_id!` and Anchor.toml match the deploy keypair.
+`9zhvjPzcUw4DZYBB7qSQ92pXyupkfV8ircrHW6dMAJpW`
+Deploy tx: 587HpTUmtj7jwrxqAAV1ht45CiH9WYPohZcKhxtDCtnPQWhKF8EmFz5ZZcfnZSDXgehuGvxQRBnn4Tu2GgtWENYG
+declare_id, Anchor.toml, and the deploy keypair all match.
