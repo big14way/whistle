@@ -7,7 +7,14 @@ export interface BrowserTokens {
   apiToken?: string;
 }
 
+import { injectedTokens } from "./config";
+
 export function getTxlineTokens(): BrowserTokens {
+  // Prefer the injected demo tokens (the correct, server issued pair) so a manual
+  // paste cannot get them wrong. localStorage is only used when none are injected.
+  if (injectedTokens.jwt || injectedTokens.apiToken) {
+    return { jwt: injectedTokens.jwt, apiToken: injectedTokens.apiToken };
+  }
   try {
     return {
       jwt: localStorage.getItem("whistle:txline:jwt") || undefined,

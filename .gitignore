@@ -32,3 +32,6 @@ app/src/demo-wallets.generated.json
 *.pid
 anchor-build.log
 sbf-test.log
+
+# injected demo tokens (gitignored secret)
+app/src/txline-tokens.generated.json

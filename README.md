@@ -165,8 +165,19 @@ Where we hit friction:
   toolchain note above) cost real time. A recommended, lock pinned dependency set for
   the current platform-tools would help every integrator.
 - The exact per update SSE stat shape and the two stat `eventStatRoot` mapping are
-  not fully spelled out in the docs; we built tolerant parsers and flagged them as
-  items to confirm against a live payload.
+  not fully spelled out in the docs; we built tolerant parsers and confirmed them
+  against a live payload (hashes are number arrays, both stats share one
+  `eventStatRoot`, `subTreeProof` can be empty, `period` is 0 for full game keys).
+- The guest JWT is bound to the IP it was issued from (`maybeClientIp` in the
+  token), so a browser on a different IP than the activating wallet gets 401 on data
+  calls. The frontend proxies TxLINE calls through the Vite dev server so they
+  originate from the issuing IP. A header documenting the IP binding would help.
+- The activate endpoint returns the API token as a plain text body, not JSON, and
+  the documented "Authorization: Bearer apiToken" for data calls is actually
+  "Authorization: Bearer jwt" plus "X-Api-Token: apiToken". Confirmed empirically.
+- The devnet `/api/fixtures/snapshot` lists only upcoming fixtures; completed
+  fixtures with anchored stats are found through the `scores/updates` windows of past
+  anchored days. A "completed fixtures" listing would simplify finding demo data.
 
 ## License
 

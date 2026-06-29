@@ -51,7 +51,9 @@ export function SettlementModal({
         const tokens = getTxlineTokens();
         const client = new TxlineClient({ apiBase: appConfig.apiBase, jwt: tokens.jwt, apiToken: tokens.apiToken });
         const fixtureId = appConfig.demoFixtureId ?? market.fixtureId;
-        const seq = update?.seq ?? 0;
+        // Use the anchored demo seq when set; the live feed seq rarely matches the
+        // exact sequence whose stat is final and anchored.
+        const seq = appConfig.demoSeq ?? update?.seq ?? 0;
         const resp: any = await client.getStatValidation(
           fixtureId,
           seq,

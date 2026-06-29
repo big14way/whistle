@@ -31,6 +31,7 @@ export interface GeneratedConfig {
   usdcDecimals: number;
   demoFixtureId?: number;
   demoFixtureAddress?: string;
+  demoSeq?: number;
   markets?: MarketSeed[];
 }
 

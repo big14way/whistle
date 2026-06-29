@@ -21,6 +21,8 @@ export interface AppConfig {
   usdcDecimals: number;
   demoFixtureId?: number;
   demoFixtureAddress?: string;
+  /// The anchored sequence number whose stat the demo settles against.
+  demoSeq?: number;
   markets?: MarketSeed[];
 }
 
@@ -39,7 +41,16 @@ const configMods = import.meta.glob("../config.generated.json", { eager: true })
 >;
 const loaded = Object.values(configMods)[0]?.default ?? {};
 
-export const appConfig: AppConfig = { ...DEFAULTS, ...loaded };
+const merged: AppConfig = { ...DEFAULTS, ...loaded };
+
+// In the browser, route TxLINE calls through the dev server proxy (/txline-api)
+// so they originate from this host's IP (the guest token is IP bound) and avoid
+// CORS. The proxy is configured in vite.config.ts.
+if (typeof window !== "undefined") {
+  merged.apiBase = `${window.location.origin}/txline-api/`;
+}
+
+export const appConfig: AppConfig = merged;
 
 export const isSeeded = Boolean(appConfig.programId && appConfig.usdcMint && appConfig.demoFixtureId != null);
 
@@ -48,3 +59,11 @@ const walletMods = import.meta.glob("../demo-wallets.generated.json", { eager: t
   { default: Record<string, number[]> }
 >;
 export const demoWalletSecrets: Record<string, number[]> = Object.values(walletMods)[0]?.default ?? {};
+
+// Injected demo TxLINE tokens (written by the deploy phase, gitignored). When
+// present the app uses them directly so no manual paste is needed.
+const tokenMods = import.meta.glob("../txline-tokens.generated.json", { eager: true }) as Record<
+  string,
+  { default: { jwt?: string; apiToken?: string } }
+>;
+export const injectedTokens: { jwt?: string; apiToken?: string } = Object.values(tokenMods)[0]?.default ?? {};
