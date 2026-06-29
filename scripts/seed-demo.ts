@@ -151,15 +151,15 @@ async function main() {
   const resolveAfterTs = new BN(now + resolveSecs);
   const voidAfterTs = new BN(now + 24 * 3600);
 
+  // Append a fresh set of markets each run so the demo always has open markets to
+  // bet on (markets lock LOCK_SECS after creation). Each run adds four markets at
+  // the current market_count and points the config at this fresh set.
   const startCount = (await program.account.fixture.fetch(fixture)).marketCount;
   const markets: MarketSeed[] = [];
-  for (let marketId = 0; marketId < MARKET_SPECS.length; marketId++) {
+  for (let i = 0; i < MARKET_SPECS.length; i++) {
+    const marketId = startCount + i;
     const [market] = marketPda(program.programId, fixture, marketId);
-    const spec = MARKET_SPECS[marketId];
-    if (marketId < startCount) {
-      markets.push({ marketId, title: spec.title, address: market.toBase58() });
-      continue;
-    }
+    const spec = MARKET_SPECS[i];
     const [vaultAuthority] = vaultAuthorityPda(program.programId, market);
     const [vault] = vaultPda(program.programId, market);
     await program.methods
