@@ -333,6 +333,9 @@ button:disabled {
   font-weight: 600;
 }
 .pool-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--text-muted);
 }
