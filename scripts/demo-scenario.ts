@@ -72,13 +72,19 @@ async function main() {
   const startCount = await retry(() => program.account.fixture.fetch(fixture).then((f) => f.marketCount), "count");
   const markets: MarketSeed[] = [];
 
+  // One shared time base for every market, so the staggered windows are measured
+  // from a single kickoff instead of each market's own creation time. Otherwise
+  // the first market's resolve time would already be in the past by the time the
+  // last market and its bets finish seeding.
+  const t0 = Math.floor(Date.now() / 1000);
+  const spacingMs = Number(process.env.SPACING_MS || "2000");
+
   for (let i = 0; i < SPECS.length; i++) {
     const s = SPECS[i];
     const marketId = startCount + i;
     const [market] = marketPda(program.programId, fixture, marketId);
     const [vaultAuthority] = vaultAuthorityPda(program.programId, market);
     const [vault] = vaultPda(program.programId, market);
-    const now = Math.floor(Date.now() / 1000);
     await retry(
       () =>
         program.methods
@@ -91,9 +97,9 @@ async function main() {
             op: (s.b != null ? s.op : null) as any,
             threshold: s.thr,
             comparison: ge,
-            lockTs: new BN(now + lockSecs),
-            resolveAfterTs: new BN(now + s.resolve),
-            voidAfterTs: new BN(now + 86400),
+            lockTs: new BN(t0 + lockSecs),
+            resolveAfterTs: new BN(t0 + s.resolve),
+            voidAfterTs: new BN(t0 + 86400),
             title: s.title,
           } as any)
           .accountsPartial({
@@ -111,7 +117,7 @@ async function main() {
       `create "${s.title}"`,
     );
     console.log(`created market ${marketId}: ${s.title} (settles minute ${s.minute}, resolve +${s.resolve}s)`);
-    await sleep(7000);
+    await sleep(spacingMs);
 
     const bet = async (who: typeof bettorA, side: boolean, amt: number) => {
       const p = getProgram(getProvider(conn, who));
@@ -138,9 +144,9 @@ async function main() {
       );
     };
     await bet(bettorA, true, s.yes);
-    await sleep(7000);
+    await sleep(spacingMs);
     await bet(bettorB, false, s.no);
-    await sleep(7000);
+    await sleep(spacingMs);
     console.log(`  bets placed: YES ${s.yes} / NO ${s.no}`);
 
     markets.push({ marketId, title: s.title, address: market.toBase58(), settleMinute: s.minute });

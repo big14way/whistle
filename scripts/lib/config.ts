@@ -2,6 +2,8 @@
 // single source of truth shared between the scripts, the tests, and the frontend.
 // Both are gitignored.
 
+// Load the repo root .env so RPC_URL and tokens are available to every script.
+import "dotenv/config";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";

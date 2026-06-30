@@ -14,7 +14,22 @@ import whistleIdl from "../../../target/idl/whistle.json";
 import type { Whistle } from "../../../target/types/whistle";
 import { appConfig } from "./config";
 
-export const connection = new Connection(appConfig.rpcUrl, "confirmed");
+// Confirmations use a websocket subscription. Some HTTP RPC providers (Alchemy
+// and QuickNode free tiers, for example) do not serve `signatureSubscribe`, which
+// makes confirmTransaction hang even though the send landed. When the RPC is a
+// custom provider, confirm over the public devnet websocket (which does support
+// it) while still reading and sending over the fast provider. VITE_WS_URL can
+// override. A public solana endpoint derives a working websocket on its own.
+const wsOverride = (import.meta.env?.VITE_WS_URL as string | undefined) ?? undefined;
+const wsEndpoint =
+  wsOverride ??
+  (/api\.(devnet|testnet|mainnet-beta)\.solana\.com/.test(appConfig.rpcUrl)
+    ? undefined
+    : "wss://api.devnet.solana.com/");
+export const connection = new Connection(
+  appConfig.rpcUrl,
+  wsEndpoint ? { commitment: "confirmed", wsEndpoint } : "confirmed",
+);
 export const PROGRAM_ID = new PublicKey(appConfig.programId || (whistleIdl as { address: string }).address);
 export const TXORACLE_ID = new PublicKey(appConfig.txoracleProgramId);
 export const USDC_MINT = appConfig.usdcMint ? new PublicKey(appConfig.usdcMint) : null;

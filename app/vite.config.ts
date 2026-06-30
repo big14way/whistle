@@ -6,6 +6,8 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
 // node polyfills provide Buffer and process, which @solana/web3.js and Anchor need
 // in the browser.
 export default defineConfig({
+  // Read .env from the repo root (one .env for the app and the scripts).
+  envDir: "..",
   plugins: [
     react(),
     nodePolyfills({

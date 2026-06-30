@@ -133,14 +133,18 @@ Live, and the real settle.
 
 The public devnet RPC (`api.devnet.solana.com`) rate limits per IP, which slows
 seeding and the frontend. Point everything at a free Helius, QuickNode, or Alchemy
-devnet endpoint:
+devnet endpoint. Copy `.env.example` to `.env` at the repo root (gitignored) and set
+both variables to the same URL:
 
 ```bash
-export RPC_URL=https://your-devnet-rpc      # scripts (seed, demo-scenario, probe)
-# app/.env.local:  VITE_RPC_URL=https://your-devnet-rpc
+# .env  (repo root, gitignored)
+VITE_RPC_URL=https://your-devnet-rpc        # frontend (Vite reads it via envDir: "..")
+RPC_URL=https://your-devnet-rpc             # scripts (loaded with dotenv)
 ```
 
-The public endpoint stays the default fallback.
+The frontend reads `VITE_RPC_URL` and the scripts read `RPC_URL`, both falling back
+to `https://api.devnet.solana.com` when unset. Vite only reads `.env` at startup, so
+restart the dev server after editing it.
 
 ### Demo scenario (the staggered settlement showcase)
 
