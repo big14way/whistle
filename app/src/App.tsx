@@ -24,7 +24,12 @@ export function App() {
   // once, on first load, so the Settlement activity feed and the timeline never show
   // stale cross fixture entries. With no fixture configured we start empty.
   const [receipts, setReceipts] = useState<Record<string, SettlementReceipt>>(() =>
-    appConfig.demoFixtureId != null ? pruneReceiptsToFixture(appConfig.demoFixtureId) : {},
+    appConfig.demoFixtureId != null
+      ? pruneReceiptsToFixture(
+          appConfig.demoFixtureId,
+          appConfig.markets?.map((m) => m.address),
+        )
+      : {},
   );
 
   useEffect(() => {

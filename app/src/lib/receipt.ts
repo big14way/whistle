@@ -53,12 +53,19 @@ export function saveReceipt(r: SettlementReceipt): void {
 /// fixture entry disappears without the user clearing storage by hand. Returns the
 /// surviving, fixture scoped map so the caller can seed state in a single pass, and
 /// only writes back when something was actually removed.
-export function pruneReceiptsToFixture(fixtureId: number): Record<string, SettlementReceipt> {
+export function pruneReceiptsToFixture(
+  fixtureId: number,
+  addresses?: string[],
+): Record<string, SettlementReceipt> {
+  // When the current market addresses are known, also drop receipts whose market is
+  // no longer on the board. Re-seeding the same fixture mints new market addresses,
+  // so this self cleans the activity feed across re-seeds, not just across fixtures.
+  const allow = addresses && addresses.length ? new Set(addresses) : null;
   try {
     const all = loadReceipts();
     const kept: Record<string, SettlementReceipt> = {};
     for (const [k, r] of Object.entries(all)) {
-      if (r.fixtureId === fixtureId) kept[k] = r;
+      if (r.fixtureId === fixtureId && (!allow || allow.has(r.marketAddress))) kept[k] = r;
     }
     if (Object.keys(kept).length !== Object.keys(all).length) {
       localStorage.setItem(KEY, JSON.stringify(kept));
