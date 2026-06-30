@@ -5,6 +5,7 @@
 // one block settle time. The emotional read: markets settle and pay at staggered
 // moments while the match keeps moving, so wins land before the whistle.
 
+import type { CSSProperties } from "react";
 import type { MarketView } from "../lib/market";
 import type { SettlementReceipt } from "../lib/receipt";
 
@@ -24,8 +25,24 @@ export function MatchTimeline({
   minute: number;
   receipts: Record<string, SettlementReceipt>;
 }) {
+  // Sort by settle minute, then cluster markets whose minutes fall within CLUSTER of
+  // each other so near identical positions (for example two full game markets at
+  // minute 85) share a group, and give each a separate stacked lane so neither the
+  // dots nor the labels collide, at full time or anywhere else.
+  const CLUSTER = 4;
   const nodes = [...markets].sort((a, b) => a.settleMinute - b.settleMinute || a.marketId - b.marketId);
-  const stackSeen: Record<number, number> = {};
+  const lane: Record<string, number> = {};
+  let clusterAnchor = -Infinity;
+  let clusterLane = -1;
+  for (const m of nodes) {
+    if (m.settleMinute - clusterAnchor > CLUSTER) {
+      clusterAnchor = m.settleMinute;
+      clusterLane = 0;
+    } else {
+      clusterLane += 1;
+    }
+    lane[m.address] = clusterLane;
+  }
 
   return (
     <div className="card timeline">
@@ -48,15 +65,25 @@ export function MatchTimeline({
         </div>
         {nodes.map((m) => {
           const mn = m.settleMinute;
-          const stack = (stackSeen[mn] = (stackSeen[mn] ?? -1) + 1);
+          const stack = lane[m.address] ?? 0;
           const settled = m.state === "settledYes" || m.state === "settledNo";
           const voided = m.state === "voided";
           const due = !settled && !voided && minute >= mn;
           const cls = settled ? "settled" : voided ? "voided" : due ? "due" : "open";
           const r = receipts[m.address];
           const pot = m.totalYes + m.totalNo;
+          // Nudge a label toward track center near the edges so a wide label never
+          // overflows the card, and stack lanes by 60px so a label clears the next.
+          const p = (mn / FULL) * 100;
+          const shift = p > 82 ? -56 : p > 70 ? -34 : p < 14 ? 56 : p < 28 ? 34 : 0;
+          const style = {
+            left: pct(mn),
+            top: `${8 + stack * 60}px`,
+            ["--tl-shift" as string]: `${shift}px`,
+            ["--tl-stack" as string]: stack,
+          } as CSSProperties;
           return (
-            <div key={m.address} className={`tl-node ${cls}`} style={{ left: pct(mn), top: `${8 + stack * 30}px` }}>
+            <div key={m.address} className={`tl-node ${cls}${stack > 0 ? " tl-stacked" : ""}`} style={style}>
               <span className="tl-dot" aria-hidden="true" />
               <div className="tl-label">
                 <span className="tl-title">{shorten(m.title)}</span>

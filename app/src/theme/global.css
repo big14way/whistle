@@ -715,7 +715,7 @@ button:disabled {
 /* Match settlement timeline */
 .timeline .tl-track {
   position: relative;
-  height: 156px;
+  height: 200px;
   margin-top: var(--s2);
 }
 .tl-line {
@@ -772,6 +772,19 @@ button:disabled {
 .tl-node {
   position: absolute;
 }
+/* A thin connector from a stacked node up to the track line, so a node sitting in a
+   lower lane still reads as anchored to its settle minute. Decorative, non interactive. */
+.tl-node.tl-stacked::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: calc(6px - var(--tl-stack, 0) * 60px);
+  height: calc(2px + var(--tl-stack, 0) * 60px);
+  width: 2px;
+  transform: translateX(-50%);
+  background: var(--border);
+  pointer-events: none;
+}
 .tl-dot {
   position: absolute;
   top: 8px;
@@ -800,10 +813,10 @@ button:disabled {
 }
 .tl-label {
   position: absolute;
-  top: 26px;
+  top: 24px;
   left: 0;
-  transform: translateX(-50%);
-  width: 160px;
+  transform: translateX(calc(-50% + var(--tl-shift, 0px)));
+  width: 150px;
   text-align: center;
 }
 .tl-title {
@@ -1067,6 +1080,9 @@ select,
   }
   .topbar {
     gap: var(--s2);
+  }
+  .tl-label {
+    width: 120px;
   }
 }
 
