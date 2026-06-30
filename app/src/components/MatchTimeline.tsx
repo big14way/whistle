@@ -43,6 +43,10 @@ export function MatchTimeline({
     }
     lane[m.address] = clusterLane;
   }
+  // Grow the track so even a deep stack of same minute markets fits without
+  // overflowing the card (lane 0 is the track line, each further lane adds 60px).
+  const maxLane = nodes.reduce((mx, m) => Math.max(mx, lane[m.address] ?? 0), 0);
+  const trackHeight = Math.max(200, 96 + maxLane * 60);
 
   return (
     <div className="card timeline">
@@ -52,7 +56,7 @@ export function MatchTimeline({
         </span>
         <span className="mono muted">{minute}&apos;</span>
       </div>
-      <div className="tl-track">
+      <div className="tl-track" style={{ height: trackHeight }}>
         <div className="tl-line" />
         <div className="tl-tick" style={{ left: pct(45) }}>
           <span>HT</span>
