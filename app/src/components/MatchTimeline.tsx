@@ -67,7 +67,7 @@ export function MatchTimeline({
                   </span>
                 )}
                 {voided && <span className="tl-chip">Voided</span>}
-                {due && <span className="tl-chip due">ready to settle</span>}
+                {due && <span className="tl-chip due">Ready to settle</span>}
               </div>
             </div>
           );
