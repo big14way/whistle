@@ -9,7 +9,7 @@ import { PnlStrip } from "./components/PnlStrip";
 import { SettlementModal } from "./components/SettlementModal";
 import { appConfig, isSeeded } from "./lib/config";
 import type { MarketView } from "./lib/market";
-import { loadReceipts, type SettlementReceipt } from "./lib/receipt";
+import { pruneReceiptsToFixture, type SettlementReceipt } from "./lib/receipt";
 import { useDemoWallets } from "./state/useDemoWallets";
 import { useMarkets } from "./state/useMarkets";
 import { useMatch } from "./state/useMatch";
@@ -20,7 +20,12 @@ export function App() {
   const { mode, setMode, update, error } = useMatch();
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
   const [settling, setSettling] = useState<MarketView | null>(null);
-  const [receipts, setReceipts] = useState<Record<string, SettlementReceipt>>(() => loadReceipts());
+  // Scope receipts to the current demo fixture and prune any from older fixtures
+  // once, on first load, so the Settlement activity feed and the timeline never show
+  // stale cross fixture entries. With no fixture configured we start empty.
+  const [receipts, setReceipts] = useState<Record<string, SettlementReceipt>>(() =>
+    appConfig.demoFixtureId != null ? pruneReceiptsToFixture(appConfig.demoFixtureId) : {},
+  );
 
   useEffect(() => {
     const t = setInterval(() => setNowSec(Math.floor(Date.now() / 1000)), 1000);

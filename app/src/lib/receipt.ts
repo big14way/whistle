@@ -47,3 +47,24 @@ export function saveReceipt(r: SettlementReceipt): void {
     // ignore storage failures
   }
 }
+
+/// One time cleanup, meant to run on load: drop any receipt whose fixtureId is not
+/// the current demo fixture (or is missing) from localStorage, so a stale cross
+/// fixture entry disappears without the user clearing storage by hand. Returns the
+/// surviving, fixture scoped map so the caller can seed state in a single pass, and
+/// only writes back when something was actually removed.
+export function pruneReceiptsToFixture(fixtureId: number): Record<string, SettlementReceipt> {
+  try {
+    const all = loadReceipts();
+    const kept: Record<string, SettlementReceipt> = {};
+    for (const [k, r] of Object.entries(all)) {
+      if (r.fixtureId === fixtureId) kept[k] = r;
+    }
+    if (Object.keys(kept).length !== Object.keys(all).length) {
+      localStorage.setItem(KEY, JSON.stringify(kept));
+    }
+    return kept;
+  } catch {
+    return {};
+  }
+}
