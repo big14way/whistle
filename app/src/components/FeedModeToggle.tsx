@@ -8,10 +8,11 @@ const MODES: { mode: FeedMode; label: string }[] = [
 
 export function FeedModeToggle({ mode, onChange }: { mode: FeedMode; onChange: (m: FeedMode) => void }) {
   return (
-    <div className="segmented" style={{ width: 280 }}>
+    <div className="segmented" role="group" aria-label="Feed mode" style={{ width: 280 }}>
       {MODES.map((m) => (
         <button
           key={m.mode}
+          aria-pressed={mode === m.mode}
           className={mode === m.mode ? "active no" : ""}
           style={mode === m.mode ? { background: "var(--accent)", color: "white" } : undefined}
           onClick={() => onChange(m.mode)}

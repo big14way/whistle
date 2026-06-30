@@ -34,6 +34,7 @@ export function SettlementModal({
   const [sig, setSig] = useState<string>("");
   const [outcome, setOutcome] = useState<string>("");
   const [settleSeconds, setSettleSeconds] = useState<number | null>(null);
+  const [sentSig, setSentSig] = useState<string>("");
   const started = useRef(false);
 
   const feedValue = predicateValue(market, update?.stats ?? {});
@@ -75,7 +76,9 @@ export function SettlementModal({
         const rootsPda = deriveRootsPda(args.fixtureSummary.updateStats.minTimestamp, TXORACLE_ID);
         // Measure the wall clock from sending the settle to its confirmation.
         const t0 = Date.now();
-        const txSig = await settleMarket(new PublicKey(market.address), args, rootsPda, settler.keypair);
+        const txSig = await settleMarket(new PublicKey(market.address), args, rootsPda, settler.keypair, (s) =>
+          setSentSig(s),
+        );
         const secs = (Date.now() - t0) / 1000;
         setSettleSeconds(secs);
         setSig(txSig);
@@ -124,9 +127,24 @@ export function SettlementModal({
     })();
   }, [market, settler, update, onSettled]);
 
+  // Escape closes the modal once it has reached a terminal state.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && (stage === "done" || stage === "error")) onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [stage, onClose]);
+
   return (
     <div className="scrim" onClick={stage === "done" || stage === "error" ? onClose : undefined}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Settling ${market.title}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         {stage !== "done" && stage !== "error" && (
           <>
             <h2 className="display">Settling on chain</h2>
@@ -141,6 +159,17 @@ export function SettlementModal({
               <Step state={stepState(stage, "fetching")} label="Fetching cryptographic proof from TxLINE" />
               <Step state={stepState(stage, "verifying")} label="Verifying on chain via validate_stat (CPI)" />
             </div>
+            {stage === "verifying" && sentSig && (
+              <a
+                className="muted mono"
+                style={{ fontSize: 12, display: "block", marginTop: 8 }}
+                href={explorerTx(sentSig, appConfig.cluster)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Submitted {sentSig.slice(0, 8)}…, watch it confirm on Explorer
+              </a>
+            )}
           </>
         )}
 
@@ -201,7 +230,7 @@ function Step({ state, label }: { state: "pending" | "active" | "done"; label: s
   return (
     <div className={`step ${state}`}>
       {state === "active" ? (
-        <span className="spinner" />
+        <span className="spinner" role="status" aria-label="Working" />
       ) : (
         <span className="ic">{state === "done" ? "✓" : ""}</span>
       )}

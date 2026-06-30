@@ -39,6 +39,10 @@ export function BetPanel({
 
   const submit = async () => {
     if (!wallet || amount <= 0) return;
+    if (amount > bal) {
+      push("err", `${wallet.label} has only ${bal.toFixed(0)} USDC`);
+      return;
+    }
     setPending(true);
     try {
       const sig = await placeBet(new PublicKey(market.address), side === "yes", amount, wallet.keypair);
@@ -53,19 +57,23 @@ export function BetPanel({
 
   return (
     <div className="betpanel">
-      <div className="segmented">
-        <button className={side === "yes" ? "active yes" : ""} onClick={() => pickSide("yes")}>
+      <div className="segmented" role="group" aria-label="Bet side">
+        <button className={side === "yes" ? "active yes" : ""} aria-pressed={side === "yes"} onClick={() => pickSide("yes")}>
           YES
         </button>
-        <button className={side === "no" ? "active no" : ""} onClick={() => pickSide("no")}>
+        <button className={side === "no" ? "active no" : ""} aria-pressed={side === "no"} onClick={() => pickSide("no")}>
           NO
         </button>
       </div>
 
       <div className="amount">
         <input
+          id={`amt-${market.address}`}
+          name="amount"
           type="number"
+          inputMode="decimal"
           min={0}
+          aria-label="Bet amount in USDC"
           value={amount}
           onChange={(e) => setAmount(Math.max(0, Number(e.target.value)))}
         />
@@ -107,12 +115,8 @@ export function BetPanel({
         </span>
       </div>
 
-      <button
-        className={`btn block ${side === "yes" ? "yes" : "no"}`}
-        disabled={pending || amount <= 0 || amount > bal}
-        onClick={submit}
-      >
-        {pending ? "Placing..." : amount > bal ? "Insufficient balance" : `Place ${side.toUpperCase()} bet`}
+      <button className={`btn block ${side === "yes" ? "yes" : "no"}`} disabled={pending || amount <= 0} onClick={submit}>
+        {pending ? "Placing…" : `Place ${side.toUpperCase()} bet`}
       </button>
     </div>
   );

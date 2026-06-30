@@ -64,15 +64,19 @@ export async function placeBet(
     .rpc();
 }
 
-/// Settle a market with the shaped proof args and the derived roots PDA.
+/// Settle a market with the shaped proof args and the derived roots PDA. The
+/// onSent callback fires with the signature the instant the transaction is sent,
+/// before confirmation, so the UI can show it and a "watch it confirm" link rather
+/// than a bare spinner under RPC latency.
 export async function settleMarket(
   market: PublicKey,
   args: SettleArgs,
   rootsPda: PublicKey,
   settler: Keypair,
+  onSent?: (sig: string) => void,
 ): Promise<string> {
   const program = programFor(settler);
-  return program.methods
+  const tx = await program.methods
     .settle(args as never)
     .accountsPartial({
       market,
@@ -81,7 +85,16 @@ export async function settleMarket(
       settler: settler.publicKey,
     })
     .preInstructions([ComputeBudgetProgram.setComputeUnitLimit({ units: SETTLE_COMPUTE_UNITS })])
-    .rpc();
+    .transaction();
+
+  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+  tx.feePayer = settler.publicKey;
+  tx.recentBlockhash = blockhash;
+  tx.sign(settler);
+  const sig = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: false, maxRetries: 5 });
+  onSent?.(sig);
+  await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+  return sig;
 }
 
 /// Claim a payout or refund.

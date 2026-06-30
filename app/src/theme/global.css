@@ -993,3 +993,89 @@ button:disabled {
   color: var(--text-muted);
   font-size: 11px;
 }
+
+/* Accessibility: visible focus on every interactive element */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Touch: avoid the 300ms delay and the grey tap flash */
+button,
+a,
+input,
+select,
+.chip,
+.wfund {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Honor reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Contain modal scroll so it does not chain to the page */
+.scrim {
+  overscroll-behavior: contain;
+}
+
+/* Mobile polish */
+@media (max-width: 620px) {
+  .fixture .score {
+    font-size: 24px;
+  }
+  .fixture .teams {
+    font-size: 18px;
+  }
+  .cols {
+    grid-template-columns: 1fr;
+  }
+  .topbar {
+    gap: var(--s2);
+  }
+}
+
+html {
+  color-scheme: dark;
+}
+
+/* Loading skeletons */
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--s4);
+}
+.skeleton-card {
+  height: 200px;
+  border-radius: var(--r-card);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  animation: skel 1.4s var(--ease) infinite;
+}
+@keyframes skel {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}

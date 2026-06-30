@@ -55,6 +55,10 @@ if (typeof window !== "undefined") {
   merged.apiBase = `${window.location.origin}/txline-api/`;
 }
 
+// A dedicated RPC avoids the public devnet rate limits. Set VITE_RPC_URL to use one.
+const rpcOverride = import.meta.env?.VITE_RPC_URL as string | undefined;
+if (rpcOverride) merged.rpcUrl = rpcOverride;
+
 export const appConfig: AppConfig = merged;
 
 export const isSeeded = Boolean(appConfig.programId && appConfig.usdcMint && appConfig.demoFixtureId != null);

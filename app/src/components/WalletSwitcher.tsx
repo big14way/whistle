@@ -30,7 +30,7 @@ export function WalletSwitcher({
           <div key={w.role} className="wchip">
             <span className="wcol">
               <span className="name">{w.label}</span>
-              <span className="bal mono">{b ? b.usdc.toFixed(0) : "..."} USDC</span>
+              <span className="bal mono">{b ? b.usdc.toFixed(0) : "…"} USDC</span>
             </span>
             <button
               className="wfund"
@@ -39,7 +39,7 @@ export function WalletSwitcher({
               disabled={funding === w.role}
               onClick={() => fund(w.role)}
             >
-              {funding === w.role ? "..." : "+"}
+              {funding === w.role ? "…" : "+"}
             </button>
           </div>
         );

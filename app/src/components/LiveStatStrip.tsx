@@ -35,7 +35,7 @@ export function LiveStatStrip({ update }: { update: MatchUpdate | null }) {
   };
 
   return (
-    <div className="card statstrip">
+    <div className="card statstrip" role="group" aria-label="Live match stats" aria-live="polite">
       {ROWS.map((r) => (
         <div className="row" key={r.label}>
           {cell(r.home, "right")}

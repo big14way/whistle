@@ -129,6 +129,29 @@ demo wallets), both written by the scripts and both gitignored. In the app, clic
 "Set tokens" and paste the jwt and apiToken from `pnpm txline-auth` to enable Replay,
 Live, and the real settle.
 
+### Dedicated RPC (recommended for a smooth demo)
+
+The public devnet RPC (`api.devnet.solana.com`) rate limits per IP, which slows
+seeding and the frontend. Point everything at a free Helius, QuickNode, or Alchemy
+devnet endpoint:
+
+```bash
+export RPC_URL=https://your-devnet-rpc      # scripts (seed, demo-scenario, probe)
+# app/.env.local:  VITE_RPC_URL=https://your-devnet-rpc
+```
+
+The public endpoint stays the default fallback.
+
+### Demo scenario (the staggered settlement showcase)
+
+```bash
+pnpm demo-scenario   # markets with bets and staggered resolve times on the demo fixture
+```
+
+This seeds a first half market that becomes settleable at halftime while the full
+game markets are still locked, so on camera one market settles and pays out while the
+match clock keeps running. Run it right before recording so the windows are fresh.
+
 ### Live deployment (devnet)
 
 | Thing | Value |

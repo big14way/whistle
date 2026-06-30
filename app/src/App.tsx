@@ -16,7 +16,7 @@ import { useMatch } from "./state/useMatch";
 
 export function App() {
   const { wallets, balances, refresh: refreshWallets, fund } = useDemoWallets();
-  const { markets, refresh: refreshMarkets } = useMarkets();
+  const { markets, loading: marketsLoading, refresh: refreshMarkets } = useMarkets();
   const { mode, setMode, update, error } = useMatch();
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
   const [settling, setSettling] = useState<MarketView | null>(null);
@@ -61,13 +61,20 @@ export function App() {
 
       <div className="layout" style={{ marginTop: 24 }}>
         <div className="col">
-          <div className="section-title" style={{ margin: 0 }}>
+          <h2 className="section-title" style={{ margin: 0 }}>
             Prop markets
-          </div>
+          </h2>
           {markets.length === 0 ? (
-            <div className="muted">
-              No markets found for fixture #{appConfig.demoFixtureId ?? "?"}. Seed the demo to create them.
-            </div>
+            marketsLoading ? (
+              <div className="skeleton-grid">
+                <div className="skeleton-card" />
+                <div className="skeleton-card" />
+              </div>
+            ) : (
+              <div className="muted">
+                No markets found for fixture #{appConfig.demoFixtureId ?? "?"}. Seed the demo to create them.
+              </div>
+            )
           ) : (
             <div className="cols">
               {markets.map((m) => (
@@ -90,9 +97,9 @@ export function App() {
           <LiveStatStrip update={update} />
           <PnlStrip markets={markets} />
           <div className="card">
-            <div className="section-title" style={{ margin: "0 0 8px" }}>
+            <h2 className="section-title" style={{ margin: "0 0 8px" }}>
               Settlement activity
-            </div>
+            </h2>
             <ActivityFeed receipts={receipts} />
           </div>
         </div>
