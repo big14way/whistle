@@ -144,6 +144,26 @@ From `GET /api/scores/stat-validation?fixtureId=17588323&seq=944&statKey=7&statK
   both the `ts` argument and the epochDay roots derivation.
 - `statToProve.period` is `0` for full game keys, matching `floor(key / 1000)`.
 
+## period is sequence dependent (important for non full game markets)
+
+The oracle's `period` field is NOT always `floor(key / 1000)`. It varies by sequence
+for the same key. For the demo fixture 17588245: at seq 989 EVERY queried key
+(corners 7/8, goals 1/2, and first half goals 1001/1002) reports `period 0`, while at
+seq 985 the same first half keys reported `period 5`. So the market `stat_a_period`
+must be set to the value the oracle returns at the chosen settle seq, determined
+empirically with `fetch-validation`, not derived from the key. The demo settles every
+market at seq 989 with period 0. The settle period binding (a settler cannot prove a
+different period) is still correct: it binds whatever value was stored at creation.
+
+## Demo fixture (current): Croatia vs Ghana
+
+```
+fixtureId = 17588245   (completed, Croatia 2 Ghana 1, five corners, anchored epochDay)
+seq       = 989
+keys      = corners 7+8, goals 1+2, first half goals 1001+1002 (all period 0 at seq 989)
+teams     = Participant1 id 1766 Croatia, Participant2 id 2043 Ghana (app/src/lib/teams.ts)
+```
+
 ## Soccer feed encoding (confirmed)
 
 Stat key formula: `key = period * 1000 + base_key`.
