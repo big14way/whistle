@@ -28,10 +28,18 @@ export function WalletSwitcher({
         const b = balances[w.role];
         return (
           <div key={w.role} className="wchip">
-            <span className="name">{w.label}</span>
-            <span className="bal mono">{b ? b.usdc.toFixed(2) : "..."} USDC</span>
-            <button className="btn ghost sm" disabled={funding === w.role} onClick={() => fund(w.role)}>
-              {funding === w.role ? "..." : "Fund +100"}
+            <span className="wcol">
+              <span className="name">{w.label}</span>
+              <span className="bal mono">{b ? b.usdc.toFixed(0) : "..."} USDC</span>
+            </span>
+            <button
+              className="wfund"
+              title={`Fund ${w.label} with 100 mock USDC`}
+              aria-label={`Fund ${w.label} with 100 mock USDC`}
+              disabled={funding === w.role}
+              onClick={() => fund(w.role)}
+            >
+              {funding === w.role ? "..." : "+"}
             </button>
           </div>
         );

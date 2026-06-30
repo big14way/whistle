@@ -8,6 +8,8 @@ export interface MarketSeed {
   marketId: number;
   title: string;
   address: string;
+  /// The match minute this market narratively resolves at (for the timeline).
+  settleMinute?: number;
 }
 
 export interface AppConfig {
@@ -23,6 +25,9 @@ export interface AppConfig {
   demoFixtureAddress?: string;
   /// The anchored sequence number whose stat the demo settles against.
   demoSeq?: number;
+  /// Target replay duration in ms, so the synthesized clock lines up with the
+  /// staggered on chain resolve times.
+  demoReplayMs?: number;
   markets?: MarketSeed[];
 }
 

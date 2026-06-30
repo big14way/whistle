@@ -17,6 +17,10 @@ export interface SettlementReceipt {
   outcome: string;
   sig: string;
   ts: number;
+  /// Measured wall clock seconds from clicking Settle to the tx confirming.
+  settleSeconds?: number;
+  /// USDC pot paid to the winning side.
+  pot?: number;
 }
 
 const KEY = "whistle:receipts";

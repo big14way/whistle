@@ -32,6 +32,7 @@ export function SettlementModal({
   const [error, setError] = useState<string>("");
   const [sig, setSig] = useState<string>("");
   const [outcome, setOutcome] = useState<string>("");
+  const [settleSeconds, setSettleSeconds] = useState<number | null>(null);
   const started = useRef(false);
 
   const feedValue = predicateValue(market, update?.stats ?? {});
@@ -71,7 +72,11 @@ export function SettlementModal({
         setStage("verifying");
         const args = shapeSettleArgs(resp, claimedWinner);
         const rootsPda = deriveRootsPda(args.fixtureSummary.updateStats.minTimestamp, TXORACLE_ID);
+        // Measure the wall clock from sending the settle to its confirmation.
+        const t0 = Date.now();
         const txSig = await settleMarket(new PublicKey(market.address), args, rootsPda, settler.keypair);
+        const secs = (Date.now() - t0) / 1000;
+        setSettleSeconds(secs);
         setSig(txSig);
 
         // Read back the resolved state (it may Void if the winning pool was empty).
@@ -101,6 +106,8 @@ export function SettlementModal({
           outcome: outcomeLabel,
           sig: txSig,
           ts: Date.now(),
+          settleSeconds: secs,
+          pot: market.totalYes + market.totalNo,
         };
         saveReceipt(receipt);
         setStage("done");
@@ -141,6 +148,12 @@ export function SettlementModal({
                 {outcome}
               </span>
             </p>
+            {settleSeconds != null && (
+              <div className="settle-time">
+                <span className="big-time mono">{settleSeconds.toFixed(1)}s</span>
+                <span className="muted"> verified on chain (one block)</span>
+              </div>
+            )}
             <p className="mono muted" style={{ fontSize: 12, wordBreak: "break-all", margin: "12px 0" }}>
               {sig}
             </p>

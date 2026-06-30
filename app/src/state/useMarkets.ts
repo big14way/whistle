@@ -15,7 +15,11 @@ export function useMarkets() {
       seeds.map(async (s) => {
         try {
           const acc = await fetchMarket(new PublicKey(s.address));
-          if (acc) out.push(mapMarket(s.address, acc));
+          if (acc) {
+            const view = mapMarket(s.address, acc);
+            if (s.settleMinute != null) view.settleMinute = s.settleMinute;
+            out.push(view);
+          }
         } catch {
           // skip a market that cannot be read
         }

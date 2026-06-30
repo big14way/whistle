@@ -34,23 +34,19 @@ export function AppShell({
   return (
     <>
       <header className="topbar">
-        <div className="wordmark">
-          <span className="dot" />
+        <h1 className="wordmark">
+          <span className="dot" aria-hidden="true" />
           Whistle
-        </div>
+        </h1>
         <ClusterBadge />
         <div className="grow" />
+        <WalletSwitcher wallets={wallets} balances={balances} onFund={onFund} />
         <FeedModeToggle mode={mode} onChange={onMode} />
         <button className="btn ghost sm" onClick={setTokens} title="Set TxLINE tokens for Replay, Live, and settle">
           {hasTxlineTokens() ? "Tokens set" : "Set tokens"}
         </button>
       </header>
-      <div className="shell">
-        <div style={{ display: "flex", justifyContent: "flex-end", padding: "12px 0" }}>
-          <WalletSwitcher wallets={wallets} balances={balances} onFund={onFund} />
-        </div>
-        {children}
-      </div>
+      <div className="shell">{children}</div>
     </>
   );
 }

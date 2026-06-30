@@ -24,7 +24,8 @@ export function useMatch() {
     const tokens = getTxlineTokens();
     const client = new TxlineClient({ apiBase: appConfig.apiBase, jwt: tokens.jwt, apiToken: tokens.apiToken });
     const fixtureId = appConfig.demoFixtureId ?? 0;
-    if (m === "replay") return new HistoricalReplayFeed({ client, fixtureId, stepMs: 1500 });
+    if (m === "replay")
+      return new HistoricalReplayFeed({ client, fixtureId, targetDurationMs: appConfig.demoReplayMs ?? 90000 });
     return new LiveSseFeed({ client, fixtureId });
   }, []);
 

@@ -18,6 +18,9 @@ export interface HistoricalReplayOptions {
   preloaded?: MatchUpdate[];
   /// Cap on the number of frames emitted (keeps the replay snappy).
   maxFrames?: number;
+  /// Total replay duration in ms. When set, stepMs is derived so the synthesized
+  /// clock lines up with the staggered on chain resolve times.
+  targetDurationMs?: number;
 }
 
 function statsKey(s: Record<number, number>): string {
@@ -72,9 +75,12 @@ export class HistoricalReplayFeed implements FeedSource {
 
   start(onUpdate: (u: MatchUpdate) => void, onError: (e: unknown) => void): void {
     this.stopped = false;
-    const stepMs = this.opts.stepMs ?? 1200;
 
     const run = (updates: MatchUpdate[]) => {
+      // Derive the step so the whole replay spans targetDurationMs when set.
+      const stepMs = this.opts.targetDurationMs
+        ? Math.max(250, Math.floor(this.opts.targetDurationMs / Math.max(1, updates.length)))
+        : this.opts.stepMs ?? 1200;
       let i = 0;
       const tick = () => {
         if (this.stopped || i >= updates.length) {

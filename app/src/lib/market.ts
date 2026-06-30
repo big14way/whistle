@@ -27,6 +27,10 @@ export interface MarketView {
   state: MarketStateName;
   feeBps: number;
   title: string;
+  /// The match minute this market narratively settles at (for the timeline). From
+  /// config when seeded, else derived from the stat period (H1 keys settle at half
+  /// time, everything else near full time).
+  settleMinute: number;
 }
 
 function enumName(v: Record<string, unknown> | undefined, fallback: string): string {
@@ -59,7 +63,14 @@ export function mapMarket(address: string, account: any): MarketView {
     state: enumName(account.state, "open") as MarketStateName,
     feeBps: account.feeBps,
     title: account.title,
+    settleMinute: deriveSettleMinute(account.statAKey),
   };
+}
+
+/// First half stats (period 1 in the key) settle at half time; everything else
+/// near full time. The exact value can be overridden per market from config.
+export function deriveSettleMinute(statAKey: number): number {
+  return Math.floor(statAKey / 1000) === 1 ? 45 : 88;
 }
 
 /// Restate the predicate in plain English from the integer threshold.

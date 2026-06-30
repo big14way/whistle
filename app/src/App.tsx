@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { ActivityFeed } from "./components/ActivityFeed";
 import { AppShell } from "./components/AppShell";
 import { FixtureHeader } from "./components/FixtureHeader";
 import { LiveStatStrip } from "./components/LiveStatStrip";
 import { MarketCard } from "./components/MarketCard";
+import { MatchTimeline } from "./components/MatchTimeline";
+import { PnlStrip } from "./components/PnlStrip";
 import { SettlementModal } from "./components/SettlementModal";
 import { appConfig, isSeeded } from "./lib/config";
 import type { MarketView } from "./lib/market";
@@ -25,6 +28,7 @@ export function App() {
   }, []);
 
   const settler = useMemo(() => wallets.find((w) => w.role === "settler"), [wallets]);
+  const minute = update?.minute ?? 0;
 
   const onAction = () => {
     refreshMarkets().catch(() => undefined);
@@ -47,33 +51,52 @@ export function App() {
       )}
       {error && mode !== "simulation" && (
         <div className="banner" style={{ marginBottom: 16 }}>
-          Feed error in {mode} mode: {error}. Set TxLINE tokens, or switch to Simulation.
+          Feed error in {mode} mode: {error}. The app falls back to Simulation, which runs fully offline.
         </div>
       )}
 
       <FixtureHeader update={update} />
       <div style={{ height: 16 }} />
-      <LiveStatStrip update={update} />
+      <MatchTimeline markets={markets} minute={minute} receipts={receipts} />
 
-      <div className="section-title">Markets</div>
-      {markets.length === 0 ? (
-        <div className="muted">No markets found for fixture #{appConfig.demoFixtureId ?? "?"}. Seed the demo to create them.</div>
-      ) : (
-        <div className="cols">
-          {markets.map((m) => (
-            <MarketCard
-              key={m.address}
-              market={m}
-              wallets={wallets}
-              balances={balances}
-              nowSec={nowSec}
-              receipt={receipts[m.address]}
-              onAction={onAction}
-              onOpenSettle={setSettling}
-            />
-          ))}
+      <div className="layout" style={{ marginTop: 24 }}>
+        <div className="col">
+          <div className="section-title" style={{ margin: 0 }}>
+            Prop markets
+          </div>
+          {markets.length === 0 ? (
+            <div className="muted">
+              No markets found for fixture #{appConfig.demoFixtureId ?? "?"}. Seed the demo to create them.
+            </div>
+          ) : (
+            <div className="cols">
+              {markets.map((m) => (
+                <MarketCard
+                  key={m.address}
+                  market={m}
+                  wallets={wallets}
+                  balances={balances}
+                  nowSec={nowSec}
+                  receipt={receipts[m.address]}
+                  onAction={onAction}
+                  onOpenSettle={setSettling}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      )}
+
+        <div className="col">
+          <LiveStatStrip update={update} />
+          <PnlStrip markets={markets} />
+          <div className="card">
+            <div className="section-title" style={{ margin: "0 0 8px" }}>
+              Settlement activity
+            </div>
+            <ActivityFeed receipts={receipts} />
+          </div>
+        </div>
+      </div>
 
       {settling && settler && (
         <SettlementModal
