@@ -53,12 +53,18 @@ export function MarketCard({
         <StateBadge market={market} phase={phase} />
       </div>
 
-      <div className="split">
-        <div className="seg yes" style={{ flexBasis: `${Math.max(yesPct, 12)}%` }}>
-          YES {market.totalYes.toFixed(0)} ({yesPct}%)
+      <div className="pool">
+        <div className="pool-labels mono">
+          <span className="pool-label yes">
+            <span className="pct">{yesPct}%</span> YES {market.totalYes.toFixed(0)}
+          </span>
+          <span className="pool-label no">
+            {market.totalNo.toFixed(0)} NO <span className="pct">{noPct}%</span>
+          </span>
         </div>
-        <div className="seg no" style={{ flexBasis: `${Math.max(noPct, 12)}%` }}>
-          ({noPct}%) {market.totalNo.toFixed(0)} NO
+        <div className="split" role="img" aria-label={`YES pool ${yesPct} percent, NO pool ${noPct} percent`}>
+          <div className="seg yes" style={{ flexBasis: `${yesPct}%` }} />
+          <div className="seg no" style={{ flexBasis: `${noPct}%` }} />
         </div>
       </div>
 

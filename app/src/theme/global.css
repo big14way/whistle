@@ -316,35 +316,52 @@ button:disabled {
   font-family: var(--font-mono);
 }
 
-/* Split bar (YES vs NO pools) */
-.split {
+/* Pool split (YES vs NO pools). Labels sit in a row above a proportional bar, so
+   the minority percentage can never clip inside a narrow segment. */
+.pool {
   display: flex;
-  height: 38px;
-  border-radius: var(--r-btn);
-  overflow: hidden;
-  border: 1px solid var(--border);
-  font-family: var(--font-mono);
+  flex-direction: column;
+  gap: var(--s2);
+}
+.pool-labels {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
   font-variant-numeric: tabular-nums;
   font-size: 13px;
   font-weight: 600;
 }
-.split .seg {
-  display: flex;
-  align-items: center;
-  padding: 0 var(--s3);
-  transition: flex-basis var(--t-mid) var(--ease);
+.pool-label {
   white-space: nowrap;
+  color: var(--text-muted);
+}
+.pool-label.yes {
+  color: var(--yes);
+}
+.pool-label.no {
+  color: var(--no);
+}
+.pool-label .pct {
+  font-weight: 700;
+}
+.split {
+  display: flex;
+  height: 16px;
+  border-radius: var(--r-btn);
   overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.split .seg {
+  min-width: 0;
+  transition: flex-basis var(--t-mid) var(--ease);
 }
 .split .seg.yes {
-  background: rgba(0, 229, 160, 0.16);
-  color: var(--yes);
-  justify-content: flex-start;
+  background: rgba(0, 229, 160, 0.7);
 }
 .split .seg.no {
-  background: rgba(255, 92, 92, 0.16);
-  color: var(--no);
-  justify-content: flex-end;
+  background: rgba(255, 92, 92, 0.7);
 }
 
 /* Bet panel */
