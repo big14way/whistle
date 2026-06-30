@@ -7,6 +7,7 @@ import { decodeAnchorError } from "../lib/errors";
 import type { DemoWallet } from "../lib/demoWallets";
 import { type MarketView, predicateValue, restate } from "../lib/market";
 import { saveReceipt, type SettlementReceipt } from "../lib/receipt";
+import { resolveTeam, teamFlag } from "../lib/teams";
 import { TXORACLE_ID } from "../lib/program";
 import type { MatchUpdate } from "../lib/txline/feed";
 import { TxlineClient } from "../lib/txline/client";
@@ -108,6 +109,10 @@ export function SettlementModal({
           ts: Date.now(),
           settleSeconds: secs,
           pot: market.totalYes + market.totalNo,
+          home: resolveTeam(update?.p1Id)?.name,
+          away: resolveTeam(update?.p2Id)?.name,
+          homeFlag: teamFlag(resolveTeam(update?.p1Id)),
+          awayFlag: teamFlag(resolveTeam(update?.p2Id)),
         };
         saveReceipt(receipt);
         setStage("done");

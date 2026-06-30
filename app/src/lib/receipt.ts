@@ -21,6 +21,11 @@ export interface SettlementReceipt {
   settleSeconds?: number;
   /// USDC pot paid to the winning side.
   pot?: number;
+  /// The matchup, captured at settle time for the shareable receipt.
+  home?: string;
+  away?: string;
+  homeFlag?: string;
+  awayFlag?: string;
 }
 
 const KEY = "whistle:receipts";
