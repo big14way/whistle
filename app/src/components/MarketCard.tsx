@@ -13,13 +13,12 @@ function fmtCountdown(sec: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-// Canonical lifecycle states: Open, Locked, Ready to settle, Settled, Voided. The
-// YES/NO outcome of a settled market is carried by the badge color (green vs red)
-// and shown verbatim in the timeline chip and the proof receipt, so the badge text
-// stays the single canonical state word.
+// Canonical lifecycle states: Open, Locked, Ready to settle, Settled, Voided. A
+// settled market appends the proven YES/NO outcome so the winning side is conveyed
+// by text, not by the badge color alone (the green vs red color reinforces it).
 function StateBadge({ market, phase }: { market: MarketView; phase: string }) {
-  if (market.state === "settledYes") return <span className="badge yes">Settled</span>;
-  if (market.state === "settledNo") return <span className="badge no">Settled</span>;
+  if (market.state === "settledYes") return <span className="badge yes">Settled YES</span>;
+  if (market.state === "settledNo") return <span className="badge no">Settled NO</span>;
   if (market.state === "voided") return <span className="badge voided">Voided</span>;
   if (phase === "open") return <span className="badge open">Open</span>;
   if (phase === "resolvable") return <span className="badge locked">Ready to settle</span>;
