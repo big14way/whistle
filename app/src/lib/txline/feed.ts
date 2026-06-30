@@ -17,6 +17,9 @@ export interface MatchUpdate {
   awayScore?: number;
   /// Match clock in minutes if available.
   minute?: number;
+  /// Participant ids (used to resolve team names and flags).
+  p1Id?: number;
+  p2Id?: number;
   raw?: unknown;
 }
 

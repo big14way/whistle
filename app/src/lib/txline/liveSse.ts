@@ -36,7 +36,7 @@ export class LiveSseFeed implements FeedSource {
           (evt: any) => {
             // Filter to the demo fixture, then normalize. Guard every line.
             try {
-              const eid = String(evt?.fixtureId ?? evt?.summary?.fixtureId ?? evt?.fixture_id ?? "");
+              const eid = String(evt?.FixtureId ?? evt?.fixtureId ?? evt?.summary?.fixtureId ?? "");
               if (eid && eid !== fixtureId) return;
               const u = parseUpdate(evt);
               if (u) {

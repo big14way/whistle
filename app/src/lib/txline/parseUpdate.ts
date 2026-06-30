@@ -1,8 +1,9 @@
-// Normalize a raw TxLINE scores update (SSE event or a historical/snapshot entry)
-// into a MatchUpdate. The exact per update stat shape is a [VERIFY] item: log a
-// real SSE line and a /api/scores/snapshot response in the deploy phase and tune
-// this if the field names differ. The parser is deliberately tolerant and is
-// wrapped in try/catch by every caller so a malformed line cannot crash a feed.
+// Normalize a raw TxLINE scores event into a MatchUpdate. Confirmed against the
+// live historical feed for fixture 17588323: events are PascalCase
+// ({ Seq, Ts, GameState, Stats, Clock, Participant1Id, Participant2Id }) and the
+// stats are a flat object keyed by statKey. The parser is tolerant (it also
+// accepts camelCase) and every caller wraps it in try/catch so a malformed line
+// cannot crash a feed.
 
 import type { MatchUpdate } from "./feed";
 
@@ -12,10 +13,10 @@ function num(v: unknown): number | undefined {
   return undefined;
 }
 
-/// Pull a stats map (statKey -> value) out of several plausible encodings.
+/// Pull a stats map (statKey -> value) out of the event.
 function extractStats(raw: any): Record<number, number> {
   const out: Record<number, number> = {};
-  const s = raw?.stats ?? raw?.scoreStats ?? raw?.statValues;
+  const s = raw?.Stats ?? raw?.stats ?? raw?.scoreStats ?? raw?.statValues;
   if (Array.isArray(s)) {
     for (const item of s) {
       const key = num(item?.key ?? item?.statKey ?? item?.k);
@@ -32,38 +33,66 @@ function extractStats(raw: any): Record<number, number> {
   return out;
 }
 
+// The devnet feed reports GameState as a string. Map the known strings to the
+// soccer feed phase ids; default to Not started.
+const STATE_MAP: Record<string, number> = {
+  scheduled: 1,
+  ns: 1,
+  "1h": 2,
+  "1st": 2,
+  firsthalf: 2,
+  ht: 3,
+  halftime: 3,
+  "2h": 4,
+  "2nd": 4,
+  secondhalf: 4,
+  ft: 5,
+  f: 5,
+  fulltime: 5,
+};
+
+function mapGameState(v: unknown): number {
+  if (typeof v === "number") return v;
+  if (typeof v === "string") {
+    const key = v.toLowerCase().replace(/[^a-z0-9]/g, "");
+    return STATE_MAP[key] ?? 1;
+  }
+  return 1;
+}
+
 export function parseUpdate(raw: any): MatchUpdate | null {
   if (!raw || typeof raw !== "object") return null;
-  const seq = num(raw.seq ?? raw.sequence ?? raw.updateCount) ?? 0;
-  const ts = num(raw.ts ?? raw.timestamp ?? raw.maxTimestamp ?? raw.minTimestamp) ?? Date.now();
-  const gameState = num(raw.gameState ?? raw.phase ?? raw.gamePhase ?? raw.state) ?? 0;
+  const seq = num(raw.Seq ?? raw.seq ?? raw.sequence ?? raw.updateCount) ?? 0;
+  const ts = num(raw.Ts ?? raw.ts ?? raw.timestamp ?? raw.maxTimestamp) ?? Date.now();
   const stats = extractStats(raw);
 
-  const homeScore = num(raw.homeScore ?? raw.participant1Score ?? raw.p1Score ?? stats[1]);
-  const awayScore = num(raw.awayScore ?? raw.participant2Score ?? raw.p2Score ?? stats[2]);
+  const clockSec = num(raw.Clock?.Seconds ?? raw.clock?.seconds);
+  const minute = clockSec !== undefined ? Math.floor(clockSec / 60) : num(raw.minute ?? raw.matchMinute);
+
+  // Full game goals are keys 1 (P1) and 2 (P2).
+  const homeScore = num(raw.homeScore ?? raw.participant1Score ?? stats[1]) ?? 0;
+  const awayScore = num(raw.awayScore ?? raw.participant2Score ?? stats[2]) ?? 0;
 
   return {
     seq,
     ts,
-    gameState,
+    gameState: mapGameState(raw.GameState ?? raw.gameState ?? raw.phase ?? raw.state),
     stats,
-    homeName: raw.homeName ?? raw.participant1 ?? raw.home,
-    awayName: raw.awayName ?? raw.participant2 ?? raw.away,
+    homeName: raw.homeName ?? raw.Participant1 ?? raw.participant1,
+    awayName: raw.awayName ?? raw.Participant2 ?? raw.participant2,
     homeScore,
     awayScore,
-    minute: num(raw.minute ?? raw.clock ?? raw.matchMinute),
+    minute,
+    p1Id: num(raw.Participant1Id ?? raw.participant1Id),
+    p2Id: num(raw.Participant2Id ?? raw.participant2Id),
     raw,
   };
 }
 
-/// Pull an ordered list of updates from a /api/scores/historical/{fixtureId}
-/// response, which may be an array or wrapped in a field.
-export function extractHistorical(raw: any): MatchUpdate[] {
-  const list = Array.isArray(raw)
-    ? raw
-    : raw?.updates ?? raw?.history ?? raw?.events ?? raw?.data ?? [];
+/// Parse all events out of a list of raw historical events.
+export function extractHistorical(events: any[]): MatchUpdate[] {
   const out: MatchUpdate[] = [];
-  for (const item of Array.isArray(list) ? list : []) {
+  for (const item of Array.isArray(events) ? events : []) {
     const u = parseUpdate(item);
     if (u) out.push(u);
   }

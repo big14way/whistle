@@ -139,49 +139,75 @@ export class TxlineClient {
     return this.getJson(`scores/snapshot/${fixtureId}`);
   }
 
-  getHistorical(fixtureId: number | string): Promise<unknown> {
-    return this.getJson(`scores/historical/${fixtureId}`);
+  /// The historical scores feed is an SSE stream (text/event-stream), not JSON.
+  /// Read it fully and return the parsed events in order.
+  async getHistoricalEvents(fixtureId: number | string, signal?: AbortSignal): Promise<unknown[]> {
+    const out: unknown[] = [];
+    await this.readSse(`scores/historical/${fixtureId}`, (e) => out.push(e), signal);
+    return out;
   }
 
-  /// Stream the SSE scores feed. Calls onMessage with each parsed JSON event.
+  /// Stream the live SSE scores feed. Calls onMessage with each parsed event.
   async streamScores(
     onMessage: (evt: unknown) => void,
     onError: (e: unknown) => void,
     signal?: AbortSignal,
   ): Promise<void> {
     try {
-      const res = await fetch(this.apiBase + "scores/stream", {
-        headers: { ...this.headers(), Accept: "text/event-stream" },
-        signal,
-      });
-      if (!res.ok || !res.body) {
-        throw new Error(`scores/stream failed: ${res.status}`);
-      }
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      for (;;) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || trimmed.startsWith(":")) continue;
-          const payload = trimmed.startsWith("data:") ? trimmed.slice(5).trim() : trimmed;
-          if (!payload) continue;
-          // Guard parsing: a malformed line must not crash the loop.
-          try {
-            onMessage(JSON.parse(payload));
-          } catch {
-            // ignore non JSON keepalives
-          }
-        }
-      }
+      await this.readSse("scores/stream", onMessage, signal);
     } catch (e) {
       onError(e);
     }
+  }
+
+  /// Extract the JSON object from one SSE frame. Per the SSE spec a frame can have
+  /// multiple data: lines, which are concatenated. Returns null for keep alives,
+  /// comments, or malformed payloads (guarded so one bad frame cannot break a feed).
+  private parseSseFrame(frame: string): unknown | null {
+    const dataLines: string[] = [];
+    for (const line of frame.split(/\r?\n/)) {
+      if (line.startsWith("data:")) dataLines.push(line.slice(5).replace(/^ /, ""));
+    }
+    if (dataLines.length === 0) return null;
+    const payload = dataLines.join("\n").trim();
+    if (!payload) return null;
+    try {
+      return JSON.parse(payload);
+    } catch {
+      return null;
+    }
+  }
+
+  /// Read an SSE endpoint, buffering across chunks and splitting on blank lines so
+  /// frames that span chunk boundaries are handled. Calls onEvent per parsed frame.
+  private async readSse(
+    path: string,
+    onEvent: (evt: unknown) => void,
+    signal?: AbortSignal,
+  ): Promise<void> {
+    const res = await fetch(this.apiBase + path, {
+      headers: { ...this.headers(), Accept: "text/event-stream" },
+      signal,
+    });
+    if (!res.ok || !res.body) {
+      throw new Error(`GET ${path} failed: ${res.status} ${await safeText(res)}`);
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const frames = buffer.split(/\r?\n\r?\n/);
+      buffer = frames.pop() ?? ""; // keep the trailing partial frame
+      for (const frame of frames) {
+        const evt = this.parseSseFrame(frame);
+        if (evt) onEvent(evt);
+      }
+    }
+    const last = this.parseSseFrame(buffer);
+    if (last) onEvent(last);
   }
 }
 
