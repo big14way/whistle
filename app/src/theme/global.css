@@ -660,3 +660,14 @@ button:disabled {
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: var(--s4);
 }
+
+/* Team name and flag in the fixture header */
+.fixture .team {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.fixture .flag {
+  font-size: 26px;
+  line-height: 1;
+}

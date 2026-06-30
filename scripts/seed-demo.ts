@@ -46,12 +46,15 @@ interface MarketSpec {
   comparison: Cmp;
 }
 
-// Market index is the marketId. These must stay in this order across reruns.
+// Market specs for the demo fixture (Croatia vs Ghana, 2 to 1, five corners). The
+// {home} placeholder is filled from DEMO_HOME so team referencing titles read with
+// the real team name. Thresholds are set so these settle YES against the real proof.
+const HOME = process.env.DEMO_HOME || "Home";
 const MARKET_SPECS: MarketSpec[] = [
-  { title: "Total corners over 9.5 (full game)", statAKey: 7, statBKey: 8, op: "add", threshold: 9, comparison: "greaterThan" },
+  { title: "Total corners over 4.5 (full game)", statAKey: 7, statBKey: 8, op: "add", threshold: 4, comparison: "greaterThan" },
   { title: "Match total goals over 2.5", statAKey: 1, statBKey: 2, op: "add", threshold: 2, comparison: "greaterThan" },
-  { title: "Winning margin: Participant 1 by 2+", statAKey: 1, statBKey: 2, op: "subtract", threshold: 1, comparison: "greaterThan" },
-  { title: "Participant 1 to score (over 0.5 goals)", statAKey: 1, statBKey: null, op: null, threshold: 0, comparison: "greaterThan" },
+  { title: `${HOME} winning margin 1 or more`, statAKey: 1, statBKey: 2, op: "subtract", threshold: 0, comparison: "greaterThan" },
+  { title: `${HOME} to score (over 0.5 goals)`, statAKey: 1, statBKey: null, op: null, threshold: 0, comparison: "greaterThan" },
 ];
 
 // Anchor's generated enum arg types are discriminated unions that a helper return
@@ -194,7 +197,8 @@ async function main() {
     markets.push({ marketId, title: spec.title, address: market.toBase58() });
   }
 
-  writeConfig({ demoFixtureId: fixtureIdNum, demoFixtureAddress: fixture.toBase58(), markets });
+  const demoSeq = process.env.DEMO_SEQ ? Number(process.env.DEMO_SEQ) : undefined;
+  writeConfig({ demoFixtureId: fixtureIdNum, demoFixtureAddress: fixture.toBase58(), demoSeq, markets });
 
   // 6. summary
   const usdcBal = async (owner: PublicKey) => {

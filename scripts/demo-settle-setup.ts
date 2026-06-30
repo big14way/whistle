@@ -38,16 +38,18 @@ async function main() {
   const [vaultAuthority] = vaultAuthorityPda(program.programId, market);
   const [vault] = vaultPda(program.programId, market);
   const now = Math.floor(Date.now() / 1000);
+  const cornersThreshold = Number(process.env.CORNERS_THRESHOLD || "4");
+  const title = `Total corners over ${cornersThreshold}.5 (full game)`;
   await retry(() => program.methods.createMarket({
     marketId, statAKey: 7, statAPeriod: 0, statBKey: 8 as any, statBPeriod: 0 as any,
-    op: { add: {} } as any, threshold: 9, comparison: { greaterThan: {} } as any,
+    op: { add: {} } as any, threshold: cornersThreshold, comparison: { greaterThan: {} } as any,
     lockTs: new BN(now + lockSecs), resolveAfterTs: new BN(now + lockSecs + 15), voidAfterTs: new BN(now + 86400),
-    title: "Total corners over 9.5 (full game)",
+    title,
   } as any).accountsPartial({
     fixture, market, vaultAuthority, vault, stakeMint: mint, creator: deployer.publicKey,
     tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId, rent: SYSVAR_RENT_PUBKEY,
   }).rpc({ commitment: "confirmed", maxRetries: 5 }), "createMarket");
-  console.log(`created demo market ${marketId} (corners over 9.5), lock in ${lockSecs}s`);
+  console.log(`created demo market ${marketId} (${title}), lock in ${lockSecs}s`);
   await sleep(8000);
 
   const bet = async (who: typeof bettorA, side: boolean, amt: number) => {
@@ -64,7 +66,8 @@ async function main() {
   await sleep(8000);
   await bet(bettorB, false, 20);
 
-  writeConfig({ demoSeq: 944, markets: [{ marketId, title: "Total corners over 9.5 (full game)", address: market.toBase58() }] });
+  const demoSeq = Number(process.env.DEMO_SEQ || "989");
+  writeConfig({ demoSeq, markets: [{ marketId, title, address: market.toBase58() }] });
   console.log(`\nDemo ready. Market ${market.toBase58()} has YES 50 / NO 20. Settle-able in ~${lockSecs + 15}s from creation.`);
   console.log("Corners total = 13 > 9, so it settles YES and BettorA wins the 70 USDC pot.");
 }
