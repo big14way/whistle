@@ -86,7 +86,12 @@ export function MarketCard({
       )}
 
       {phase === "resolvable" && (
-        <button className="btn primary block" onClick={() => onOpenSettle(market)}>
+        <button
+          className="btn primary block"
+          disabled={wallets.length === 0}
+          title={wallets.length === 0 ? "Demo wallets are local only; run the app locally to settle" : undefined}
+          onClick={() => onOpenSettle(market)}
+        >
           Settle now (prove on chain)
         </button>
       )}

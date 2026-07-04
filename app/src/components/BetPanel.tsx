@@ -115,7 +115,12 @@ export function BetPanel({
         </span>
       </div>
 
-      <button className={`btn block ${side === "yes" ? "yes" : "no"}`} disabled={pending || amount <= 0} onClick={submit}>
+      <button
+        className={`btn block ${side === "yes" ? "yes" : "no"}`}
+        disabled={pending || amount <= 0 || !wallet}
+        title={wallet ? undefined : "Demo wallets are local only; run the app locally to bet"}
+        onClick={submit}
+      >
         {pending ? "Placing…" : `Place ${side.toUpperCase()} bet`}
       </button>
     </div>

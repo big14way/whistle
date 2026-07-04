@@ -65,6 +65,13 @@ export function App() {
           Feed error in {mode} mode: {error}. The app falls back to Simulation, which runs fully offline.
         </div>
       )}
+      {isSeeded && wallets.length === 0 && (
+        <div className="banner" style={{ marginBottom: 16 }}>
+          Read only deployment: the markets, pools, and settled outcomes below are live devnet accounts, but the
+          demo wallets and TxLINE tokens stay local. Clone the repo and run <span className="mono">pnpm app</span>{" "}
+          for the full bet and settle flow, or watch the demo video.
+        </div>
+      )}
 
       <FixtureHeader update={update} />
       <div style={{ height: 16 }} />

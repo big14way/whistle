@@ -3,6 +3,11 @@
 Trustless parametric prop settlement on Solana, settled by a Cross Program
 Invocation into the TxLINE `validate_stat` oracle.
 
+**Live read only demo:** https://big14way.github.io/whistle/ shows the real devnet
+markets, pools, and settled outcomes over the public RPC with the offline Simulation
+feed. The demo wallets and TxLINE tokens never leave your machine, so betting and
+settling need a local run (`pnpm install && pnpm app`) or the demo video.
+
 Every market is a predicate over a real match statistic from the TxLINE oracle,
 for example "total corners over 9.5", "match total goals over 2.5", or "winning
 margin 2 or more goals". Bettors lock USDC into a program owned vault. The instant
