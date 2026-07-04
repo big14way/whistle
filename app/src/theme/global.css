@@ -855,6 +855,87 @@ button:disabled {
   border-color: rgba(255, 184, 77, 0.4);
 }
 
+/* TxLINE feed panel: status pill plus the event ticker */
+.feed-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.feed-pill .seq {
+  color: var(--text);
+  font-size: 11px;
+}
+.feed-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--text-muted);
+}
+.feed-pill.fresh .feed-dot {
+  background: var(--yes);
+  box-shadow: 0 0 8px var(--yes);
+  animation: pulse 1.6s var(--ease) infinite;
+}
+.feed-pill.slow .feed-dot {
+  background: var(--pending);
+}
+.feed-events {
+  display: flex;
+  flex-direction: column;
+}
+.feed-evt {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.feed-evt:last-child {
+  border-bottom: none;
+}
+.feed-evt .min {
+  color: var(--text-muted);
+  font-size: 12px;
+  min-width: 26px;
+  text-align: right;
+}
+.evt-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-pill);
+  flex: none;
+}
+.evt-dot.goal {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+.evt-dot.corner {
+  background: var(--text-muted);
+}
+.evt-dot.yellow {
+  background: var(--pending);
+}
+.evt-dot.red {
+  background: var(--no);
+}
+.evt-label {
+  font-weight: 600;
+}
+.feed-evt .evt-team {
+  margin-left: auto;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Settlement time in the modal */
 .settle-time {
   margin: 10px 0;

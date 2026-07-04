@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ActivityFeed } from "./components/ActivityFeed";
 import { AppShell } from "./components/AppShell";
+import { FeedPanel } from "./components/FeedPanel";
 import { FixtureHeader } from "./components/FixtureHeader";
 import { LiveStatStrip } from "./components/LiveStatStrip";
 import { MarketCard } from "./components/MarketCard";
@@ -17,7 +18,7 @@ import { useMatch } from "./state/useMatch";
 export function App() {
   const { wallets, balances, refresh: refreshWallets, fund } = useDemoWallets();
   const { markets, loading: marketsLoading, refresh: refreshMarkets } = useMarkets();
-  const { mode, setMode, update, error } = useMatch();
+  const { mode, setMode, update, error, events, receivedAt } = useMatch();
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
   const [settling, setSettling] = useState<MarketView | null>(null);
   // Scope receipts to the current demo fixture and prune any from older fixtures
@@ -104,6 +105,7 @@ export function App() {
         </div>
 
         <div className="col">
+          <FeedPanel mode={mode} update={update} events={events} receivedAt={receivedAt} />
           <LiveStatStrip update={update} />
           <PnlStrip markets={markets} />
           <div className="card">
