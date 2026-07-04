@@ -1,18 +1,26 @@
-// Set up the full demo scenario: several markets on the demo fixture with bets pre
-// placed and STAGGERED resolve times, so during the replay the first half market
+// Set up the full demo scenario: six varied markets on the demo fixture with bets
+// pre placed and STAGGERED resolve times, so during the replay the first half market
 // settles and pays at halftime while the full game markets are still locked, then
-// the full game markets settle near full time. All settle against the real anchored
-// proof at seq 989 (where every demo key validates with period 0). Spaced txs to
-// dodge the public RPC rate limit.
+// the full game markets settle near full time. The set shows the predicate engine's
+// range: add and subtract ops, three stat families (goals, corners, cards), and one
+// market whose predicate FAILS so it settles NO (the oracle proves the negation).
+// All settle against the real anchored proof at seq 989, where every demo key
+// validates with period 0 and the proven values are goals 2:1, corners 3:2, first
+// half goals 1:0, yellow cards 1:1 (verified with fetch-validation).
+//
+// Timing defaults line the wall clock up with the 140s replay when the recording
+// starts right after seeding (about 60s): betting locks at replay minute ~26, the
+// first half market resolves at ~minute 45 (halftime), full game at ~minute 92.
 //
 // Run: pnpm demo-scenario
-// Env: LOCK_SECS (40), HT_SECS (60), FT_SECS (130), REPLAY_MS (140000), DEMO_SEQ (989).
+// Env: LOCK_SECS (100), HT_SECS (130), FT_SECS (200), REPLAY_MS (140000), DEMO_SEQ (989).
 
 import { BN } from "@coral-xyz/anchor";
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, getOrCreateAssociatedTokenAccount, getAccount } from "@solana/spl-token";
 import { RPC_URL } from "../app/src/lib/constants";
 import { getConnection, getProgram, getProvider } from "./lib/anchor";
+import { mintToOwner } from "./create-mock-usdc";
 import {
   clusterFromEnv,
   keypairFromSecret,
@@ -55,19 +63,48 @@ async function main() {
   const home = "Croatia";
   const [fixture] = fixturePda(program.programId, new BN(cfg.demoFixtureId!));
 
-  const lockSecs = Number(process.env.LOCK_SECS || "40");
-  const htSecs = Number(process.env.HT_SECS || "60");
-  const ftSecs = Number(process.env.FT_SECS || "130");
+  const lockSecs = Number(process.env.LOCK_SECS || "100");
+  const htSecs = Number(process.env.HT_SECS || "130");
+  const ftSecs = Number(process.env.FT_SECS || "200");
   const replayMs = Number(process.env.REPLAY_MS || "140000");
   const demoSeq = Number(process.env.DEMO_SEQ || "989");
 
   // statAPeriod / statBPeriod are 0 because the oracle reports period 0 for every
   // demo key at seq 989 (the period field is sequence dependent, see ORACLE_FACTS).
+  // Every predicate below was verified against the anchored values at seq 989:
+  // goals 2:1, corners 3:2, H1 goals 1:0, yellows 1:1. Five settle YES; "over 4.5
+  // goals" settles NO on purpose, proving the negation side of the predicate.
+  // settleMinute is the narrative timeline position; resolve is the wall clock gate.
   const SPECS = [
     { title: "First half: a goal is scored", a: 1001, b: 1002, op: add, thr: 0, resolve: htSecs, minute: 45, yes: 40, no: 15 },
-    { title: "Total corners over 4.5 (full game)", a: 7, b: 8, op: add, thr: 4, resolve: ftSecs, minute: 85, yes: 50, no: 20 },
+    { title: "Total corners over 4.5", a: 7, b: 8, op: add, thr: 4, resolve: ftSecs, minute: 81, yes: 50, no: 20 },
     { title: "Match total goals over 2.5", a: 1, b: 2, op: add, thr: 2, resolve: ftSecs, minute: 85, yes: 35, no: 25 },
+    { title: "Match total goals over 4.5", a: 1, b: 2, op: add, thr: 4, resolve: ftSecs, minute: 85, yes: 20, no: 30 },
+    { title: "Total cards over 1.5", a: 3, b: 4, op: add, thr: 1, resolve: ftSecs, minute: 88, yes: 25, no: 20 },
+    { title: `${home} to win by 1 or more`, a: 1, b: 2, op: sub, thr: 0, resolve: ftSecs, minute: 90, yes: 30, no: 25 },
   ];
+
+  // Top up the bettors so re running the scenario never fails on an empty wallet.
+  // The mock USDC mint authority lives in the demo wallets file exactly for this.
+  const needA = SPECS.reduce((s, m) => s + m.yes, 0);
+  const needB = SPECS.reduce((s, m) => s + m.no, 0);
+  if (wallets.mintAuthority) {
+    const authority = keypairFromSecret(wallets.mintAuthority);
+    for (const [who, need] of [
+      [bettorA, needA],
+      [bettorB, needB],
+    ] as const) {
+      const ata = await retry(
+        () => getOrCreateAssociatedTokenAccount(conn, deployer, mint, who.publicKey),
+        "ata",
+      );
+      const balance = Number((await retry(() => getAccount(conn, ata.address), "balance")).amount) / 1e6;
+      if (balance < need) {
+        await retry(() => mintToOwner(conn, deployer, mint, authority, who.publicKey, need + 100), "top up");
+        console.log(`topped up ${who.publicKey.toBase58().slice(0, 8)} with ${need + 100} mock USDC`);
+      }
+    }
+  }
 
   const startCount = await retry(() => program.account.fixture.fetch(fixture).then((f) => f.marketCount), "count");
   const markets: MarketSeed[] = [];
