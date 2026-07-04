@@ -4,7 +4,7 @@
 // transaction hash with an explorer link, and a "verified by TxLINE" seal.
 
 import { appConfig } from "../lib/config";
-import { explorerTx } from "../lib/constants";
+import { explorerAddress, explorerTx } from "../lib/constants";
 import { statKeyLabel } from "../lib/txline/statKeys";
 import type { SettlementReceipt } from "../lib/receipt";
 
@@ -60,6 +60,62 @@ export function ProofReceipt({ receipt }: { receipt: SettlementReceipt }) {
       <div className="rc-meta mono">
         fixture {receipt.fixtureId} &middot; seq {receipt.seq}
       </div>
+
+      <details className="rc-verify">
+        <summary>Verification details</summary>
+        <div className="rc-verify-body">
+          <div className="rc-row">
+            <span className="rc-k">Predicate</span>
+            <span className="mono">
+              key {receipt.statAKey}
+              {receipt.hasStatB ? ` ${receipt.op === "subtract" ? "-" : "+"} key ${receipt.statBKey}` : ""} {cmp}{" "}
+              {receipt.threshold}
+            </span>
+          </div>
+          <div className="rc-row">
+            <span className="rc-k">Proven values</span>
+            <span className="mono">
+              {receipt.valueA}
+              {receipt.hasStatB ? `, ${receipt.valueB}` : ""} at seq {receipt.seq}
+            </span>
+          </div>
+          <div className="rc-row">
+            <span className="rc-k">Oracle program</span>
+            <a
+              className="mono"
+              href={explorerAddress(appConfig.txoracleProgramId, appConfig.cluster)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {appConfig.txoracleProgramId.slice(0, 8)}...{appConfig.txoracleProgramId.slice(-6)}
+            </a>
+          </div>
+          {receipt.rootsPda && (
+            <div className="rc-row">
+              <span className="rc-k">Anchored root</span>
+              <a
+                className="mono"
+                href={explorerAddress(receipt.rootsPda, appConfig.cluster)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {receipt.rootsPda.slice(0, 8)}...{receipt.rootsPda.slice(-6)}
+              </a>
+            </div>
+          )}
+          <div className="rc-row">
+            <span className="rc-k">Settle tx</span>
+            <a className="mono" href={explorerTx(receipt.sig, appConfig.cluster)} target="_blank" rel="noreferrer">
+              {receipt.sig.slice(0, 8)}...{receipt.sig.slice(-6)}
+            </a>
+          </div>
+          <p className="rc-note">
+            The settle transaction carries the Merkle proof. The program CPIs into TxLINE validate_stat, which
+            recomputes the proof against the root TxODDS anchored on chain and returns true only if the predicate
+            holds. Nothing here is attested by us; every value is independently checkable from the links above.
+          </p>
+        </div>
+      </details>
     </div>
   );
 }

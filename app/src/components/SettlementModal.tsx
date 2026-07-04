@@ -116,6 +116,7 @@ export function SettlementModal({
           away: resolveTeam(update?.p2Id)?.name,
           homeFlag: teamFlag(resolveTeam(update?.p1Id)),
           awayFlag: teamFlag(resolveTeam(update?.p2Id)),
+          rootsPda: rootsPda.toBase58(),
         };
         saveReceipt(receipt);
         setStage("done");

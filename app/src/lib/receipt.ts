@@ -26,6 +26,9 @@ export interface SettlementReceipt {
   away?: string;
   homeFlag?: string;
   awayFlag?: string;
+  /// The daily_scores_roots PDA the proof was verified against, so the receipt can
+  /// link the anchored Merkle root account for independent re verification.
+  rootsPda?: string;
 }
 
 const KEY = "whistle:receipts";
