@@ -167,7 +167,7 @@ match clock keeps running. Run it right before recording so the windows are fres
 | --- | --- |
 | Whistle program | `9zhvjPzcUw4DZYBB7qSQ92pXyupkfV8ircrHW6dMAJpW` |
 | Mock USDC mint | `AjUYguAuwip6sqs3SimPGv4QLLuuEs3nwmUraTYN6v9Q` |
-| Demo fixture | `17588323` (a completed World Cup fixture, 4 markets) |
+| Demo fixture | `17588245` (Croatia 2 : 1 Ghana, completed and anchored, six staggered markets) |
 | Milestone 0 gate | PASSED, `validate_stat` returns true from a real CPI (see docs/ORACLE_FACTS.md) |
 
 The oracle CPI is proven on chain: `probe_validate` returned `true` for a satisfied

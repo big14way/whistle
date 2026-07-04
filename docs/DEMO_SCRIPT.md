@@ -16,9 +16,10 @@ time. They let a judge who watches muted still get every beat.
 1. RPC: `.env` has the Alchemy devnet URL in `VITE_RPC_URL` and `RPC_URL`. Restart the
    dev server, then confirm in the browser Network tab that calls hit
    `solana-devnet.g.alchemy.com`.
-2. Fresh state: clear localStorage for localhost:5173 (receipts persist by design),
+2. Fresh state: clear localStorage for the app origin (receipts persist by design),
    run `pnpm demo-scenario`, wait for "Demo scenario ready: 6 markets", then hard
-   refresh within a few seconds. The timing is tuned so betting locks around replay
+   refresh within a few seconds. Use the port `pnpm app` prints; another project's
+   dev server may already hold 5173. The timing is tuned so betting locks around replay
    minute 26, the first half market resolves at halftime, and the full game markets
    resolve right at full time.
 3. Confirm on screen: Croatia vs Ghana with flags, six markets, the TxLINE feed panel
