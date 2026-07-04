@@ -168,6 +168,24 @@ match clock keeps running. Run it right before recording so the windows are fres
 The oracle CPI is proven on chain: `probe_validate` returned `true` for a satisfied
 predicate and `false` for an unsatisfied one, both from real `.rpc()` transactions.
 
+## Reviewing the resolution logic
+
+The entire trustless settlement path is about 500 lines of documented Rust. The
+recommended reading order:
+
+| File | Lines | What it decides |
+| --- | --- | --- |
+| `programs/whistle/src/instructions/settle.rs` | 176 | The settle instruction: binds the proof to the market's fixture, stat keys, and periods, builds the predicate from stored fields (never from settler input), CPIs into `validate_stat`, requires the returned bool, pays nothing itself (state only) |
+| `programs/whistle/src/oracle.rs` | 196 | The CPI glue: mirror types for the oracle's Borsh layout, `predicate_for_claim` (the negation trick that makes exactly one side provable), `read_oracle_bool` via `get_return_data` |
+| `programs/whistle/src/state.rs` | 141 | `Fixture`, `Market`, `Position` accounts and the state machine (`Open` to `SettledYes`/`SettledNo`/`Voided`) |
+| `programs/whistle/src/instructions/claim.rs` | 139 | Pro rata parimutuel payout math and the refund path for voided markets |
+| `tests/whistle.ts` | 524 | The full lifecycle against devnet, including the real `validate_stat` CPI (both a satisfied and an unsatisfied predicate) |
+
+Determinism in one sentence: the outcome is a pure function of the on chain market
+fields and the oracle anchored stat, the settler supplies only proof material, and
+`GreaterThan`/`LessThan` partition the integers so every market resolves to exactly
+one side with no pushes (see `docs/SETTLEMENT.md` for the safety argument).
+
 ## TxLINE feedback notes
 
 What worked well:
