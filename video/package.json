@@ -1,0 +1,24 @@
+{
+  "name": "whistle-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Remotion project that assembles the Whistle demo video from the raw screen recording per docs/DEMO_SCRIPT.md.",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render Video out/whistle-demo.mp4",
+    "still": "remotion still"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.484",
+    "@remotion/google-fonts": "4.0.484",
+    "@remotion/media-utils": "4.0.484",
+    "@remotion/player": "4.0.484",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "4.0.484"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "typescript": "^5.6.2"
+  }
+}

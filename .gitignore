@@ -41,3 +41,11 @@ app/vite.config.d.ts
 
 # injected demo tokens (gitignored secret)
 app/src/txline-tokens.generated.json
+
+# video: raw recordings, narration, and rendered output are large binaries, not
+# source. timeline.ts and the compositions are committed; the media is not.
+video/public/*.mp4
+video/public/*.mov
+video/public/narration/
+video/out/
+video/.remotion/
