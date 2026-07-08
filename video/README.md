@@ -39,6 +39,18 @@ settle). Do not restart on small stumbles; everything gets cut here. Save it as:
 video/public/footage.mp4
 ```
 
+Record the browser MAXIMIZED (or full screen) with the camera off, so the capture
+is just the app. If the take is a full desktop capture instead (dock, menu bar,
+other windows visible), crop it to the browser first, for example:
+
+```
+ffmpeg -i raw.mov -vf "crop=W:H:X:Y,scale=2400:-2:flags=lanczos" \
+  -c:v libx264 -crf 20 -pix_fmt yuv420p -c:a aac public/footage.mp4
+```
+
+FootageScene fits the result with objectFit contain onto the brand background, so a
+slightly-taller-than-16:9 crop frames cleanly with no lost app content.
+
 ### 3. Record narration, one file per scene
 
 Read the "Narration:" block for each scene from `docs/DEMO_SCRIPT.md` separately

@@ -3,9 +3,15 @@
 // explorer inner instruction), overlays the caption, and plays a separate narration
 // track in place of the footage's own audio (recorded narration syncs far more
 // reliably than talking while clicking, see docs/DEMO_SCRIPT.md).
+//
+// footage.mp4 is already cropped to the browser (the raw capture was a full desktop
+// with dock, menu bar, and other windows around it), so it is a touch taller than
+// 16:9. Fit it with objectFit contain onto the app's brand background, which loses
+// no app content and reads as an intentional dark frame, not letterbox bars.
 
-import { Audio, interpolate, OffthreadVideo, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { interpolate, OffthreadVideo, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { Caption } from "./Caption";
+import { color } from "../theme";
 import type { Scene } from "../timeline";
 
 export function FootageScene({ scene }: { scene: Extract<Scene, { type: "footage" }> }) {
@@ -30,7 +36,7 @@ export function FootageScene({ scene }: { scene: Extract<Scene, { type: "footage
   }
 
   return (
-    <div style={{ position: "absolute", inset: 0, overflow: "hidden", background: "#000" }}>
+    <div style={{ position: "absolute", inset: 0, overflow: "hidden", background: color.bg }}>
       <div
         style={{
           position: "absolute",
@@ -44,10 +50,11 @@ export function FootageScene({ scene }: { scene: Extract<Scene, { type: "footage
           startFrom={Math.round(scene.footageStartSec * fps)}
           endAt={Math.round(scene.footageEndSec * fps)}
           muted={scene.narration}
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          style={{ width: "100%", height: "100%", objectFit: "contain" }}
         />
       </div>
-      {scene.narration && <Audio src={staticFile(`narration/${scene.key}.mp3`)} />}
+      {/* Narration audio is played centrally in Video.tsx; here we only mute the
+          footage's own sound when a voiceover is present. */}
       <Caption text={scene.caption} appearFrame={Math.round(fps * 1.5)} />
     </div>
   );

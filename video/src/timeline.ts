@@ -44,11 +44,14 @@ export type Scene =
       heading: string;
       sub?: string;
       contrast?: { left: string; right: string }[];
+      /// Narration file at video/public/narration/<key>.mp3, played over the card.
+      narration?: boolean;
     }
   | {
       key: string;
       type: "end";
       durationSec: number;
+      narration?: boolean;
     };
 
 export const SCENES: Scene[] = [
@@ -72,6 +75,7 @@ export const SCENES: Scene[] = [
       { left: "Optimistic oracle: hours to days", right: "Whistle: one block" },
       { left: "Final result only", right: "Any stat, mid match" },
     ],
+    narration: true,
   },
   {
     key: "match-room",
@@ -124,6 +128,7 @@ export const SCENES: Scene[] = [
     key: "close",
     type: "end",
     durationSec: 15,
+    narration: true,
   },
 ];
 

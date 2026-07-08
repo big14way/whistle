@@ -4,7 +4,7 @@
 import { loadFont as loadDisplay } from "@remotion/google-fonts/SpaceGrotesk";
 import { loadFont as loadBody } from "@remotion/google-fonts/Inter";
 import { loadFont as loadMono } from "@remotion/google-fonts/JetBrainsMono";
-import { AbsoluteFill, Series } from "remotion";
+import { AbsoluteFill, Audio, Series, staticFile } from "remotion";
 import { EndCard } from "./compositions/EndCard";
 import { FootageScene } from "./compositions/FootageScene";
 import { TitleCard } from "./compositions/TitleCard";
@@ -28,6 +28,9 @@ export function Video() {
               <TitleCard heading={scene.heading} sub={scene.sub} contrast={scene.contrast} />
             )}
             {scene.type === "end" && <EndCard />}
+            {/* Voiceover for any scene that has a narration clip, so the title and
+                end cards get voice too, not just the footage scenes. */}
+            {scene.narration && <Audio src={staticFile(`narration/${scene.key}.mp3`)} />}
           </Series.Sequence>
         ))}
       </Series>
