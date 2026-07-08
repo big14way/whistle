@@ -140,12 +140,18 @@ async function main() {
   const markets: MarketSeed[] = [];
 
   // One shared time base for the RESOLVE windows, so the staggered settle moments
-  // are measured from a single kickoff no matter how long seeding takes. The LOCK
-  // is different: it is each market's betting cutoff, so it anchors to that
-  // market's own creation time. Anchoring locks to t0 too made the last markets'
-  // pre placed bets race the clock once seeding (six markets plus top ups) grew
-  // past lockSecs, failing with MarketLocked.
+  // are measured from a single kickoff no matter how long seeding takes.
+  //
+  // The LOCK is the story beat that makes this a real prediction market: betting
+  // must visibly close while the match is still in play, well before any outcome
+  // is provable. Every market therefore aims its lock at the SAME narrative moment,
+  // t0 + lockSecs (about replay minute 26 when the recording starts right after
+  // seeding), with a per market floor of createdAt + 45s so the script's own pre
+  // placed bets always have a window even when seeding runs slow (anchoring locks
+  // purely to t0 once made the last market's bets race the clock and fail with
+  // MarketLocked; anchoring purely to creation let locks drift past full time).
   const t0 = Math.floor(Date.now() / 1000);
+  const BET_WINDOW_FLOOR_SECS = 45;
   const spacingMs = Number(process.env.SPACING_MS || "2000");
 
   for (let i = 0; i < SPECS.length; i++) {
@@ -155,6 +161,7 @@ async function main() {
     const [vaultAuthority] = vaultAuthorityPda(program.programId, market);
     const [vault] = vaultPda(program.programId, market);
     const createdAt = Math.floor(Date.now() / 1000);
+    const lockAt = Math.max(createdAt + BET_WINDOW_FLOOR_SECS, t0 + lockSecs);
     await retry(
       () =>
         program.methods
@@ -167,7 +174,7 @@ async function main() {
             op: (s.b != null ? s.op : null) as any,
             threshold: s.thr,
             comparison: ge,
-            lockTs: new BN(createdAt + lockSecs),
+            lockTs: new BN(lockAt),
             resolveAfterTs: new BN(t0 + s.resolve),
             voidAfterTs: new BN(t0 + 86400),
             title: s.title,

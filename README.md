@@ -161,6 +161,13 @@ This seeds a first half market that becomes settleable at halftime while the ful
 game markets are still locked, so on camera one market settles and pays out while the
 match clock keeps running. Run it right before recording so the windows are fresh.
 
+A note on the lock policy, because parimutuel pools make it matter: once an outcome
+starts becoming knowable, late bets are informed bets, so a production market should
+set `lock_ts` at kickoff. The demo seeds a short in play window (betting closes
+around replay minute 26) purely so betting can happen on camera; the program enforces
+whatever cutoff the market creator sets, and the `rejects a bet after lock_ts` test
+covers it.
+
 ### Live deployment (devnet)
 
 | Thing | Value |

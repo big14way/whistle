@@ -17,9 +17,13 @@ time. They let a judge who watches muted still get every beat.
    dev server, then confirm in the browser Network tab that calls hit
    `solana-devnet.g.alchemy.com`.
 2. Fresh state: clear localStorage for the app origin (receipts persist by design),
-   run `pnpm demo-scenario`, wait for "Demo scenario ready: 6 markets", then hard
-   refresh within a few seconds. Use the port `pnpm app` prints; another project's
-   dev server may already hold 5173. The timing is tuned so betting locks around replay
+   and START THE SCREEN RECORDER FIRST. Then run `pnpm demo-scenario`, wait for
+   "Demo scenario ready: 6 markets", and hard refresh within a few seconds. The
+   dead footage at the head gets trimmed in the edit, but the lock and settle
+   windows are choreographed to a refresh that follows seeding immediately:
+   betting locks around replay minute 26, the first half market resolves at
+   halftime, full game at full time. Use the port `pnpm app` prints; another
+   project's dev server may already hold 5173. The timing is tuned so betting locks around replay
    minute 26, the first half market resolves at halftime, and the full game markets
    resolve right at full time.
 3. Confirm on screen: Croatia vs Ghana with flags, six markets, the TxLINE feed panel
@@ -85,14 +89,20 @@ at different moments."
 On screen: open "First half: a goal is scored". Select YES, the wallet auto switches
 to Bettor A, stake 40, place it. Toast with the transaction signature. Select NO, the
 wallet auto switches to Bettor B, stake 15, place it. Watch the pool bar and the
-implied percentages move as the second bet lands, and the payout preview update.
+implied percentages move as the second bet lands, and the payout preview update. Then
+let the "Locks in" countdown reach zero on camera: every card flips from Open to
+Locked while the match keeps running.
 
-Caption: "Parimutuel pools. The odds are the pools. Real devnet transactions."
+Caption: "Parimutuel pools. The odds are the pools. Betting closes while the match
+is still in play."
 
 Narration: "Bettor A backs a first half goal with forty test USDC. Bettor B takes the
 other side. Watch the implied odds move as the second stake lands: there is no market
 maker and no order book, just two pools, and the odds are simply each side over the
-pot. Both stakes sit in a program owned vault. No middleman holds the funds."
+pot. Both stakes sit in a program owned vault, and betting closes on chain while the
+match is still running, before any outcome is knowable. For this demo the cutoff sits
+midway through the first half so you could watch the bets land; a production market
+locks at kickoff. Either way, the program enforces it."
 
 ## 2:05 to 2:50, the wow moment, settlement before the whistle
 
