@@ -20,6 +20,9 @@ export function useMatch() {
   const [mode, setMode] = useState<FeedMode>(defaultMode());
   const [update, setUpdate] = useState<MatchUpdate | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /// Set when a replay/live feed died before its first frame and the hook switched
+  /// to the offline Simulation automatically, so the UI can say what happened.
+  const [fallbackNote, setFallbackNote] = useState<string | null>(null);
   /// Discrete goal/corner/card events diffed from the update stream, newest first.
   const [events, setEvents] = useState<MatchEvent[]>([]);
   /// Wall clock time the last update arrived, for the feed freshness indicator.
@@ -54,16 +57,32 @@ export function useMatch() {
     feedRef.current = feed;
     feed.start(
       (u) => {
+        // First frame of a working replay/live feed: any earlier fallback note is
+        // stale, the real feed is healthy again.
+        if (mode !== "simulation" && lastUpdate.current === null) setFallbackNote(null);
         const fresh = diffEvents(lastUpdate.current, u);
         lastUpdate.current = u;
         setUpdate(u);
         setReceivedAt(Date.now());
         if (fresh.length > 0) setEvents((prev) => [...fresh.reverse(), ...prev].slice(0, MAX_EVENTS));
       },
-      (e) => setError(typeof e === "string" ? e : (e as Error)?.message ?? "feed error"),
+      (e) => {
+        const msg = typeof e === "string" ? e : (e as Error)?.message ?? "feed error";
+        // A feed that dies before producing a single frame leaves the room frozen.
+        // Make the promised fallback real: switch to the offline Simulation, and
+        // record what happened so the UI can say so.
+        if (mode !== "simulation" && lastUpdate.current === null) {
+          setFallbackNote(
+            `TxLINE ${mode} feed unavailable (${msg}). Switched to the offline Simulation; re-select Replay once the API recovers.`,
+          );
+          setMode("simulation");
+          return;
+        }
+        setError(msg);
+      },
     );
     return () => feed.stop();
   }, [mode, buildFeed]);
 
-  return { mode, setMode, update, error, events, receivedAt };
+  return { mode, setMode, update, error, fallbackNote, events, receivedAt };
 }

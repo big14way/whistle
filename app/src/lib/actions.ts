@@ -1,14 +1,22 @@
 // On chain actions for the demo: place a bet, settle, claim, fund a wallet, and
 // read USDC balances. Each action signs with the relevant local demo keypair.
+//
+// Confirmations poll getSignatureStatuses over HTTP instead of using web3.js
+// confirmTransaction: that API waits on a websocket signatureSubscribe
+// notification, and when the websocket is slow or blocked the wait drags on for
+// many seconds (or until blockheight expiry) even though the transaction already
+// landed in a block. Polling the fast HTTP RPC every ~350ms reports confirmation
+// within a beat of it actually happening, which is what makes the measured settle
+// time on camera read as the one block reality.
 
 import { BN } from "@coral-xyz/anchor";
-import { ComputeBudgetProgram, Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
+import { ComputeBudgetProgram, Keypair, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import {
   TOKEN_PROGRAM_ID,
+  createMintToInstruction,
   getAssociatedTokenAddressSync,
   getOrCreateAssociatedTokenAccount,
   getAccount,
-  mintTo,
 } from "@solana/spl-token";
 import { SETTLE_COMPUTE_UNITS } from "./constants";
 import { demoWalletSecrets } from "./config";
@@ -19,6 +27,36 @@ import type { SettleArgs } from "./txline/validation";
 function requireMint(): PublicKey {
   if (!USDC_MINT) throw new Error("Mock USDC mint is not configured. Run pnpm mock-usdc and pnpm seed.");
   return USDC_MINT;
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/// Wait for a signature to reach confirmed by polling the HTTP RPC. Throws on a
+/// transaction error or after timeoutMs without a confirmation.
+export async function confirmSigFast(sig: string, timeoutMs = 45000): Promise<void> {
+  const t0 = Date.now();
+  for (;;) {
+    const { value } = await connection.getSignatureStatuses([sig]);
+    const st = value[0];
+    if (st?.err) throw new Error(`Transaction ${sig} failed on chain: ${JSON.stringify(st.err)}`);
+    if (st?.confirmationStatus === "confirmed" || st?.confirmationStatus === "finalized") return;
+    if (Date.now() - t0 > timeoutMs) throw new Error(`Timed out waiting for confirmation of ${sig}`);
+    await sleep(350);
+  }
+}
+
+/// Sign, send, and poll confirm a transaction with one signer. onSent fires with
+/// the signature the instant the send returns, before confirmation, so the UI can
+/// show it rather than a bare spinner.
+async function sendAndConfirmFast(tx: Transaction, signer: Keypair, onSent?: (sig: string) => void): Promise<string> {
+  const { blockhash } = await connection.getLatestBlockhash("confirmed");
+  tx.feePayer = signer.publicKey;
+  tx.recentBlockhash = blockhash;
+  tx.sign(signer);
+  const sig = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: false, maxRetries: 5 });
+  onSent?.(sig);
+  await confirmSigFast(sig);
+  return sig;
 }
 
 export async function getUsdcBalance(owner: PublicKey): Promise<number> {
@@ -50,7 +88,7 @@ export async function placeBet(
   const vault = vaultPda(PROGRAM_ID, market);
   // Ensure the bettor has a USDC ATA (created and signed by the bettor).
   const ata = await getOrCreateAssociatedTokenAccount(connection, bettor, mint, bettor.publicKey);
-  return program.methods
+  const tx = await program.methods
     .joinMarket(side, amount)
     .accountsPartial({
       market,
@@ -61,7 +99,8 @@ export async function placeBet(
       tokenProgram: TOKEN_PROGRAM_ID,
       systemProgram: SystemProgram.programId,
     })
-    .rpc();
+    .transaction();
+  return sendAndConfirmFast(tx, bettor);
 }
 
 /// Settle a market with the shaped proof args and the derived roots PDA. The
@@ -86,15 +125,7 @@ export async function settleMarket(
     })
     .preInstructions([ComputeBudgetProgram.setComputeUnitLimit({ units: SETTLE_COMPUTE_UNITS })])
     .transaction();
-
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-  tx.feePayer = settler.publicKey;
-  tx.recentBlockhash = blockhash;
-  tx.sign(settler);
-  const sig = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: false, maxRetries: 5 });
-  onSent?.(sig);
-  await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
-  return sig;
+  return sendAndConfirmFast(tx, settler, onSent);
 }
 
 /// Claim a payout or refund.
@@ -105,7 +136,7 @@ export async function claimPayout(market: PublicKey, user: Keypair): Promise<str
   const vault = vaultPda(PROGRAM_ID, market);
   const vaultAuthority = vaultAuthorityPda(PROGRAM_ID, market);
   const ata = await getOrCreateAssociatedTokenAccount(connection, user, mint, user.publicKey);
-  return program.methods
+  const tx = await program.methods
     .claim()
     .accountsPartial({
       market,
@@ -116,7 +147,8 @@ export async function claimPayout(market: PublicKey, user: Keypair): Promise<str
       user: user.publicKey,
       tokenProgram: TOKEN_PROGRAM_ID,
     })
-    .rpc();
+    .transaction();
+  return sendAndConfirmFast(tx, user);
 }
 
 /// Mint uiAmount mock USDC to an owner using the dedicated mint authority (loaded
@@ -128,7 +160,10 @@ export async function fundWallet(owner: PublicKey, uiAmount: number): Promise<st
   }
   const mintAuthority = Keypair.fromSecretKey(Uint8Array.from(demoWalletSecrets.mintAuthority));
   const ata = await getOrCreateAssociatedTokenAccount(connection, mintAuthority, mint, owner);
-  return mintTo(connection, mintAuthority, mint, ata.address, mintAuthority, BigInt(Math.round(uiAmount * 1e6)));
+  const tx = new Transaction().add(
+    createMintToInstruction(mint, ata.address, mintAuthority.publicKey, BigInt(Math.round(uiAmount * 1e6))),
+  );
+  return sendAndConfirmFast(tx, mintAuthority);
 }
 
 /// Fetch a market account, or null.

@@ -18,7 +18,7 @@ import { useMatch } from "./state/useMatch";
 export function App() {
   const { wallets, balances, refresh: refreshWallets, fund } = useDemoWallets();
   const { markets, loading: marketsLoading, refresh: refreshMarkets } = useMarkets();
-  const { mode, setMode, update, error, events, receivedAt } = useMatch();
+  const { mode, setMode, update, error, fallbackNote, events, receivedAt } = useMatch();
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
   const [settling, setSettling] = useState<MarketView | null>(null);
   // Scope receipts to the current demo fixture and prune any from older fixtures
@@ -62,7 +62,13 @@ export function App() {
       )}
       {error && mode !== "simulation" && (
         <div className="banner" style={{ marginBottom: 16 }}>
-          Feed error in {mode} mode: {error}. The app falls back to Simulation, which runs fully offline.
+          Feed error in {mode} mode: {error}. Hard refresh to retry, or switch the feed to Simulation, which runs
+          fully offline.
+        </div>
+      )}
+      {fallbackNote && mode === "simulation" && (
+        <div className="banner" style={{ marginBottom: 16 }}>
+          {fallbackNote}
         </div>
       )}
       {isSeeded && wallets.length === 0 && (
