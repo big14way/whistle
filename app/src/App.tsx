@@ -74,9 +74,9 @@ export function App() {
       )}
       {isSeeded && wallets.length === 0 && (
         <div className="banner" style={{ marginBottom: 16 }}>
-          Read only deployment: the markets, pools, and settled outcomes below are live devnet accounts, but the
-          demo wallets and TxLINE tokens stay local. Clone the repo and run <span className="mono">pnpm app</span>{" "}
-          for the full bet and settle flow, or watch the demo video.
+          Live devnet deployment. Connect a wallet (top right), press Fund in the Your wallet panel for mock USDC,
+          and bet from your own wallet on any market below. Settling needs TxLINE tokens (IP bound), so the full
+          settle flow is in the demo video or a local run.
         </div>
       )}
 

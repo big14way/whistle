@@ -42,7 +42,7 @@ export function WalletPanel() {
       push("ok", "Funded your wallet with 100 mock USDC", sig);
       await refresh();
     } catch (e) {
-      push("err", (e as Error).message ?? "Fund failed (the mock mint authority is local only)");
+      push("err", (e as Error).message ?? "Fund failed, please retry");
     } finally {
       setFunding(false);
     }

@@ -272,6 +272,9 @@ Near term
   is settling and claiming from the connected wallet and a real, non mock USDC path.
 - Permissionless market creation in the UI: pick a fixture, a stat, a threshold, and a lock
   time; the predicate and the program owned vault are derived on chain.
+- Harden the public faucet: replace the exposed mock mint authority key with a program
+  controlled faucet PDA, so anyone self funds but no raw authority is exposed. See
+  docs/SECURITY.md for the current, bounded blast radius.
 - Mainnet deployment behind the same CPI, gated on TxLINE mainnet coverage.
 
 Medium term

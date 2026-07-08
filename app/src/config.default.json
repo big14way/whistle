@@ -1,0 +1,52 @@
+{
+  "cluster": "devnet",
+  "rpcUrl": "https://api.devnet.solana.com",
+  "programId": "9zhvjPzcUw4DZYBB7qSQ92pXyupkfV8ircrHW6dMAJpW",
+  "txoracleProgramId": "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J",
+  "apiBase": "https://txline-dev.txodds.com/api/",
+  "usdcMint": "AjUYguAuwip6sqs3SimPGv4QLLuuEs3nwmUraTYN6v9Q",
+  "usdcMintAuthority": "6nuFo7QAJAspQH62MXBP3Dwk7fmdCTEDwxx1vaMhvJCe",
+  "usdcDecimals": 6,
+  "demoFixtureId": 17588245,
+  "demoFixtureAddress": "9smKuc8YfwYb5syyL3Pubqxerg4YC9gWoicZHeLMrLts",
+  "markets": [
+    {
+      "marketId": 94,
+      "title": "First half: a goal is scored",
+      "address": "86PYvBqPPKMJGhmFTZeJddh7xMfviHeSXcfGTqSWRRQJ",
+      "settleMinute": 45
+    },
+    {
+      "marketId": 95,
+      "title": "Total corners over 4.5",
+      "address": "9KTaPNGwbG3HVtoeLVhV8DLqLf8dwH4mprgYjcz23i5q",
+      "settleMinute": 81
+    },
+    {
+      "marketId": 96,
+      "title": "Match total goals over 2.5",
+      "address": "4o7k8VYy267eaKPbtPc6xVgPsj2Fng9NsLtMHFfCtPBo",
+      "settleMinute": 85
+    },
+    {
+      "marketId": 97,
+      "title": "Match total goals over 4.5",
+      "address": "QsJt8MXnUJy1NFNN112oQbbNCDpET6Tzs6Qmr1Hsz67",
+      "settleMinute": 85
+    },
+    {
+      "marketId": 98,
+      "title": "Total cards over 1.5",
+      "address": "Edtk1vsTiudhE4viYXHMp43kaEqtSKBT6g4nwDHShizW",
+      "settleMinute": 88
+    },
+    {
+      "marketId": 99,
+      "title": "Croatia to win by 1 or more",
+      "address": "89ER7FhsybWyRtc7k5s943DdfbsWWLHrVFWzKtmrcSQp",
+      "settleMinute": 90
+    }
+  ],
+  "demoSeq": 989,
+  "demoReplayMs": 140000
+}

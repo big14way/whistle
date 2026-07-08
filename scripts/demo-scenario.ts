@@ -176,7 +176,9 @@ async function main() {
             comparison: ge,
             lockTs: new BN(lockAt),
             resolveAfterTs: new BN(t0 + s.resolve),
-            voidAfterTs: new BN(t0 + 86400),
+            // The program requires resolve <= void, so anchor void a day past resolve
+            // (works for the short demo windows and for long open public markets alike).
+            voidAfterTs: new BN(t0 + Math.max(86400, s.resolve + 86400)),
             title: s.title,
           } as any)
           .accountsPartial({

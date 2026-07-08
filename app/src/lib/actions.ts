@@ -19,7 +19,7 @@ import {
   getAccount,
 } from "@solana/spl-token";
 import { SETTLE_COMPUTE_UNITS } from "./constants";
-import { demoWalletSecrets } from "./config";
+import { demoWalletSecrets, faucetSecret } from "./config";
 import { connection, PROGRAM_ID, TXORACLE_ID, USDC_MINT, programFor, readProgram } from "./program";
 import { marketPda, positionPda, vaultAuthorityPda, vaultPda } from "./pdas";
 import type { SettleArgs } from "./txline/validation";
@@ -151,14 +151,17 @@ export async function claimPayout(market: PublicKey, user: Keypair): Promise<str
   return sendAndConfirmFast(tx, user);
 }
 
-/// Mint uiAmount mock USDC to an owner using the dedicated mint authority (loaded
-/// from the demo wallets file). Powers the Fund button.
+/// Mint uiAmount mock USDC to an owner. Powers the Fund button and the public faucet.
+/// Uses the committed public faucet key when present (so funding works on the public
+/// deployment where the local demo wallets are stripped), else the local demo mint
+/// authority. Both resolve to the same mock USDC mint authority.
 export async function fundWallet(owner: PublicKey, uiAmount: number): Promise<string> {
   const mint = requireMint();
-  if (!demoWalletSecrets.mintAuthority) {
+  const secret = faucetSecret ?? demoWalletSecrets.mintAuthority;
+  if (!secret) {
     throw new Error("Mint authority key not available. Run pnpm mock-usdc.");
   }
-  const mintAuthority = Keypair.fromSecretKey(Uint8Array.from(demoWalletSecrets.mintAuthority));
+  const mintAuthority = Keypair.fromSecretKey(Uint8Array.from(secret));
   const ata = await getOrCreateAssociatedTokenAccount(connection, mintAuthority, mint, owner);
   const tx = new Transaction().add(
     createMintToInstruction(mint, ata.address, mintAuthority.publicKey, BigInt(Math.round(uiAmount * 1e6))),
