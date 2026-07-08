@@ -8,6 +8,25 @@ markets, pools, and settled outcomes over the public RPC with the offline Simula
 feed. The demo wallets and TxLINE tokens never leave your machine, so betting and
 settling need a local run (`pnpm install && pnpm app`) or the demo video.
 
+**Demo video:** add your uploaded YouTube or Loom link here. A full cut and a 60 second
+social cut are produced from `video/` (a Remotion project, see `video/README.md`).
+
+## The problem
+
+On-chain sports betting has one bottleneck: the oracle. Today's markets settle a single
+question, the final result, and they settle slowly. Polymarket's optimistic oracle takes
+hours on the happy path and a multi day token vote when a market is disputed. That model
+cannot resolve the fine grained, in game questions fans actually care about mid match, a
+first half goal, total corners, cards, a winning margin, because there is no trustless way
+to prove them true the instant they happen. So those markets either do not exist on chain
+or they settle trustfully at game level, hours after the moment has passed.
+
+Whistle removes the bottleneck. TxLINE anchors every match stat on Solana with a Merkle
+proof, so a market can settle any stat, trustlessly, in a single block, the instant it is
+provable, even while the match is still being played.
+
+## How Whistle works
+
 Every market is a predicate over a real match statistic from the TxLINE oracle,
 for example "total corners over 9.5", "match total goals over 2.5", or "winning
 margin 2 or more goals". Bettors lock USDC into a program owned vault. The instant
@@ -49,10 +68,11 @@ programs/whistle/        the on chain program (Rust, Anchor 0.31)
 docs/
   ORACLE_FACTS.md        confirmed values from Milestone 0
   SETTLEMENT.md          plain language settlement and safety spec
-  DEMO_SCRIPT.md         the 5 minute video script
+  DEMO_SCRIPT.md         the video script (v3, judge cut)
 scripts/                 create-mock-usdc, seed-demo, fetch-validation, probe-oracle
 tests/whistle.ts         full lifecycle test including the real validate_stat CPI
 app/                     Vite + React + TypeScript frontend
+video/                   Remotion project that renders the demo and social videos
 ```
 
 ### Instructions
@@ -235,6 +255,36 @@ Where we hit friction:
 - The devnet `/api/fixtures/snapshot` lists only upcoming fixtures; completed
   fixtures with anchored stats are found through the `scores/updates` windows of past
   anchored days. A "completed fixtures" listing would simplify finding demo data.
+
+## Roadmap
+
+Whistle is a working proof of the settlement primitive, deployed and settling on devnet.
+What turns it into a product:
+
+Near term
+- Wallet connect (Phantom, Backpack) and a real USDC path, replacing the demo keypairs, so
+  anyone bets and settles from their own wallet.
+- Permissionless market creation in the UI: pick a fixture, a stat, a threshold, and a lock
+  time; the predicate and the program owned vault are derived on chain.
+- Mainnet deployment behind the same CPI, gated on TxLINE mainnet coverage.
+
+Medium term
+- Every sport and stat TxLINE anchors, not only soccer. The predicate engine is already
+  stat agnostic: any stat key, add or subtract of two stats, per period, greater or less
+  than a threshold.
+- Live match markets end to end. The Live SSE path exists; the work is hardening
+  reconnection and settlement timing against an in play feed.
+- A permissionless keeper that auto settles any resolvable market the instant its stat is
+  anchored, so payouts land with no human in the loop.
+
+Longer term
+- Liquidity depth: an optional AMM or LP backed side alongside the parimutuel pools, for
+  thin in game markets.
+- Composability: settlement is a single CPI that returns a verified boolean, so other
+  Solana programs (perps, structured products, fantasy) can settle against the same
+  primitive.
+- A market registry and creator reputation so front ends can surface well formed,
+  trustworthy markets.
 
 ## License
 
