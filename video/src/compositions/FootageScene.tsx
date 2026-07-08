@@ -46,7 +46,7 @@ export function FootageScene({ scene }: { scene: Extract<Scene, { type: "footage
         }}
       >
         <OffthreadVideo
-          src={staticFile("footage.mp4")}
+          src={staticFile(scene.source ?? "footage.mp4")}
           startFrom={Math.round(scene.footageStartSec * fps)}
           endAt={Math.round(scene.footageEndSec * fps)}
           muted={scene.narration}

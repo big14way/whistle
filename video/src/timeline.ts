@@ -22,7 +22,10 @@ export type Scene =
       key: string;
       type: "footage";
       durationSec: number;
-      /// Seconds into video/public/footage.mp4 where this scene's action starts.
+      /// Video file under video/public/ this scene is cut from. Defaults to
+      /// footage.mp4 (the main take); the full time NO settle is a separate pickup.
+      source?: string;
+      /// Seconds into the source file where this scene's action starts.
       footageStartSec: number;
       /// Seconds into video/public/footage.mp4 where this scene's action ends.
       /// (footageEndSec - footageStartSec) does not need to equal durationSec: if
@@ -54,21 +57,28 @@ export type Scene =
       narration?: boolean;
     };
 
+// durationSec of each footage/title scene is its narration clip length plus a short
+// tail (see public/narration/*.mp3). footageStartSec/EndSec are mapped to the real
+// take: betting 0-30s, markets lock and score moves to 1:1 by ~50s, the halftime
+// settle modal to explorer to the "Verified 1.7s" green check runs 55-84s, the
+// receipt and claim (score 2:1) run 84-100s, and the full game settles run 100-160s.
 export const SCENES: Scene[] = [
   {
     key: "cold-open",
     type: "footage",
-    durationSec: 25,
-    footageStartSec: 0, // TODO: point at the halftime settle click in the full take
-    footageEndSec: 25,
+    durationSec: 14.5,
+    // Settle button to click to modal, ending on the green "Verified, 1.7s" check
+    // (solidly on screen at footage 68 to 70, before the explorer navigation).
+    footageStartSec: 54.5,
+    footageEndSec: 69,
     caption: "Halftime. This market just settled and paid, on chain. The match is still running.",
-    zoom: { fromSec: 8, toSec: 20, scale: 1.15, originXPercent: 50, originYPercent: 50 },
+    zoom: { fromSec: 9, toSec: 14.5, scale: 1.15, originXPercent: 50, originYPercent: 42 },
     narration: true,
   },
   {
     key: "problem",
     type: "title",
-    durationSec: 25,
+    durationSec: 29.7,
     heading: "Whistle",
     sub: "Settle on the whistle.",
     contrast: [
@@ -80,54 +90,63 @@ export const SCENES: Scene[] = [
   {
     key: "match-room",
     type: "footage",
-    durationSec: 40,
-    footageStartSec: 25, // TODO: fill in from the raw take
-    footageEndSec: 65,
+    // Establishing tour of the room: score, feed panel, timeline, the markets grid.
+    durationSec: 29.4,
+    footageStartSec: 0.5,
+    footageEndSec: 31,
     caption: "Live TxLINE feed. Every event you see is a data frame from the anchored stream.",
     narration: true,
   },
   {
     key: "betting",
     type: "footage",
-    durationSec: 35,
-    footageStartSec: 65, // TODO: fill in from the raw take
-    footageEndSec: 100,
-    caption: "Parimutuel pools. The odds are the pools. Real devnet transactions.",
+    // The pools and the lock: betting closes on chain while the match runs to 1:1.
+    durationSec: 23.2,
+    footageStartSec: 30,
+    footageEndSec: 54,
+    caption: "Parimutuel pools. The odds are the pools. Betting closes while the match is in play.",
     narration: true,
   },
   {
     key: "settlement",
     type: "footage",
-    durationSec: 45,
-    footageStartSec: 100, // TODO: fill in from the raw take (same span as cold-open)
-    footageEndSec: 145,
+    // The full settle: click, modal, green check, then the explorer with the CPI
+    // program logs (the "returned true" proof), then back to the verified receipt.
+    durationSec: 28.1,
+    footageStartSec: 60,
+    footageEndSec: 88.5,
     caption: "One CPI into TxLINE validate_stat. It returned true.",
-    zoom: { fromSec: 20, toSec: 40, scale: 1.15, originXPercent: 50, originYPercent: 50 },
+    zoom: { fromSec: 3, toSec: 24, scale: 1.08, originXPercent: 50, originYPercent: 44 },
     narration: true,
   },
   {
     key: "proof",
     type: "footage",
-    durationSec: 25,
-    footageStartSec: 145, // TODO: fill in from the raw take
-    footageEndSec: 170,
+    // Back in the app: the receipt, the claim, the balance counting up, winnings.
+    durationSec: 28.9,
+    footageStartSec: 86,
+    footageEndSec: 116,
     caption: "The proof is the authorization. Every link is independently checkable.",
-    zoom: { fromSec: 3, toSec: 15, scale: 1.3, originXPercent: 50, originYPercent: 35 },
+    zoom: { fromSec: 5, toSec: 22, scale: 1.16, originXPercent: 50, originYPercent: 56 },
     narration: true,
   },
   {
     key: "full-time-no",
     type: "footage",
-    durationSec: 30,
-    footageStartSec: 170, // TODO: fill in from the raw take
-    footageEndSec: 200,
+    // Full time: "Match total goals over 4.5" settling NO, from the pickup take. The
+    // settle modal to the red "Settled NO" check to the explorer to the settled card.
+    durationSec: 23.7,
+    source: "footage-no.mp4",
+    footageStartSec: 2,
+    footageEndSec: 25.7,
     caption: "Three goals were scored. Over 4.5 is false, so it settles NO. The oracle proves negations too.",
+    zoom: { fromSec: 5, toSec: 14, scale: 1.12, originXPercent: 50, originYPercent: 45 },
     narration: true,
   },
   {
     key: "close",
     type: "end",
-    durationSec: 15,
+    durationSec: 16.6,
     narration: true,
   },
 ];
