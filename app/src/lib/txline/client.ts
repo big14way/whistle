@@ -29,6 +29,13 @@ function trimApi(apiBase: string): string {
   return apiBase.replace(/\/api\/?$/, "");
 }
 
+// Transient 5xx retry policy for data calls: the devnet API 503s in short bursts
+// (observed twice during recording sessions), so ride out roughly 10s of outage
+// before giving up. 4 attempts total, backing off 1.5s / 3s / 5s between them.
+const RETRIES = 4;
+const RETRY_DELAYS_MS = [1500, 3000, 5000];
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export class TxlineClient {
   apiBase: string;
   authBase: string;
@@ -116,9 +123,23 @@ export class TxlineClient {
         if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
       }
     }
-    const res = await fetch(url.toString(), { headers: this.headers() });
-    if (!res.ok) throw new Error(`GET ${path} failed: ${res.status} ${await safeText(res)}`);
-    return (await res.json()) as T;
+    // The devnet API 503s in short bursts. Ride those out with a few retries so a
+    // blip cannot fail a settle mid demo; 4xx (auth, bad request) surfaces at once.
+    let lastErr: Error = new Error(`GET ${path} failed`);
+    for (let attempt = 0; attempt < RETRIES; attempt++) {
+      if (attempt > 0) await sleep(RETRY_DELAYS_MS[attempt - 1]);
+      let res: Response;
+      try {
+        res = await fetch(url.toString(), { headers: this.headers() });
+      } catch (e) {
+        lastErr = e as Error;
+        continue;
+      }
+      if (res.ok) return (await res.json()) as T;
+      lastErr = new Error(`GET ${path} failed: ${res.status} ${await safeText(res)}`);
+      if (res.status < 500) break;
+    }
+    throw lastErr;
   }
 
   getStatValidation(
@@ -185,13 +206,33 @@ export class TxlineClient {
     onEvent: (evt: unknown) => void,
     signal?: AbortSignal,
   ): Promise<void> {
-    const res = await fetch(this.apiBase + path, {
-      headers: { ...this.headers(), Accept: "text/event-stream" },
-      signal,
-    });
-    if (!res.ok || !res.body) {
-      throw new Error(`GET ${path} failed: ${res.status} ${await safeText(res)}`);
+    // Retry the stream OPEN through transient 5xx bursts (the devnet API 503s in
+    // blips); once the stream is delivering, a mid stream failure is surfaced to
+    // the caller instead, since silently rewinding a half consumed feed would
+    // replay events the UI already showed.
+    let res: Response | null = null;
+    let lastErr: Error = new Error(`GET ${path} failed`);
+    for (let attempt = 0; attempt < RETRIES; attempt++) {
+      if (attempt > 0) await sleep(RETRY_DELAYS_MS[attempt - 1]);
+      if (signal?.aborted) throw lastErr;
+      let r: Response;
+      try {
+        r = await fetch(this.apiBase + path, {
+          headers: { ...this.headers(), Accept: "text/event-stream" },
+          signal,
+        });
+      } catch (e) {
+        lastErr = e as Error;
+        continue;
+      }
+      if (r.ok && r.body) {
+        res = r;
+        break;
+      }
+      lastErr = new Error(`GET ${path} failed: ${r.status} ${await safeText(r)}`);
+      if (r.status < 500) break;
     }
+    if (!res || !res.body) throw lastErr;
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
