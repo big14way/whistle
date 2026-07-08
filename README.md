@@ -154,6 +154,11 @@ demo wallets), both written by the scripts and both gitignored. In the app, clic
 "Set tokens" and paste the jwt and apiToken from `pnpm txline-auth` to enable Replay,
 Live, and the real settle.
 
+To bet from your own wallet instead of the demo keypairs, click "Connect wallet"
+(Phantom or any Wallet Standard wallet), press "Fund 100" in the Your wallet panel to
+mint mock USDC, then pick "My wallet" in the Wallet dropdown of any open market. The
+demo keypairs and the connect flow are independent, so either works.
+
 ### Dedicated RPC (recommended for a smooth demo)
 
 The public devnet RPC (`api.devnet.solana.com`) rate limits per IP, which slows
@@ -262,8 +267,9 @@ Whistle is a working proof of the settlement primitive, deployed and settling on
 What turns it into a product:
 
 Near term
-- Wallet connect (Phantom, Backpack) and a real USDC path, replacing the demo keypairs, so
-  anyone bets and settles from their own wallet.
+- Wallet connect is live for betting: connect Phantom or any Wallet Standard wallet, fund
+  with mock USDC, and place bets from your own wallet (pick "My wallet" in any market). Next
+  is settling and claiming from the connected wallet and a real, non mock USDC path.
 - Permissionless market creation in the UI: pick a fixture, a stat, a threshold, and a lock
   time; the predicate and the program owned vault are derived on chain.
 - Mainnet deployment behind the same CPI, gated on TxLINE mainnet coverage.

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ClusterBadge } from "./ClusterBadge";
+import { ConnectWalletButton } from "./ConnectWalletButton";
 import { FeedModeToggle } from "./FeedModeToggle";
 import { WalletSwitcher } from "./WalletSwitcher";
 import type { DemoWallet } from "../lib/demoWallets";
@@ -45,6 +46,7 @@ export function AppShell({
         <button className="btn ghost sm" onClick={setTokens} title="Set TxLINE tokens for Replay, Live, and settle">
           {hasTxlineTokens() ? "Tokens set" : "Set tokens"}
         </button>
+        <ConnectWalletButton />
       </header>
       <div className="shell">{children}</div>
     </>

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { PublicKey } from "@solana/web3.js";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { placeBet } from "../lib/actions";
+import { placeBetFromWallet } from "../lib/walletActions";
 import { decodeAnchorError } from "../lib/errors";
 import type { DemoWallet } from "../lib/demoWallets";
 import type { MarketView } from "../lib/market";
@@ -9,6 +11,9 @@ import type { WalletBalances } from "../state/useDemoWallets";
 import { useToasts } from "./Toasts";
 
 const CHIPS = [5, 10, 25, 50];
+
+// The demo wallet roles plus a sentinel for a connected browser wallet.
+type Actor = DemoWallet["role"] | "wallet";
 
 export function BetPanel({
   market,
@@ -23,30 +28,45 @@ export function BetPanel({
 }) {
   const [side, setSide] = useState<"yes" | "no">("yes");
   const [amount, setAmount] = useState(10);
-  const [role, setRole] = useState<DemoWallet["role"]>("bettorA");
+  const [role, setRole] = useState<Actor>("bettorA");
   const [pending, setPending] = useState(false);
   const { push } = useToasts();
+  const walletCtx = useWallet();
 
-  // Default wallet by side to make the demo flow obvious.
+  // Default wallet by side to make the demo flow obvious, but keep a connected
+  // browser wallet selected if the user chose it.
   const pickSide = (s: "yes" | "no") => {
     setSide(s);
-    setRole(s === "yes" ? "bettorA" : "bettorB");
+    setRole((prev) => (prev === "wallet" ? "wallet" : s === "yes" ? "bettorA" : "bettorB"));
   };
 
-  const wallet = wallets.find((w) => w.role === role);
-  const bal = wallet ? balances[wallet.role]?.usdc ?? 0 : 0;
+  const isWallet = role === "wallet";
+  const demoWallet = wallets.find((w) => w.role === role);
+  const bal = isWallet ? null : demoWallet ? balances[demoWallet.role]?.usdc ?? 0 : 0;
   const payout = previewPayout(market, side, amount);
+  const disabled = pending || amount <= 0 || (isWallet ? !walletCtx.connected : !demoWallet);
 
   const submit = async () => {
-    if (!wallet || amount <= 0) return;
-    if (amount > bal) {
-      push("err", `${wallet.label} has only ${bal.toFixed(0)} USDC`);
-      return;
-    }
+    if (amount <= 0) return;
     setPending(true);
     try {
-      const sig = await placeBet(new PublicKey(market.address), side === "yes", amount, wallet.keypair);
-      push("ok", `${wallet.label} bet ${amount} USDC on ${side.toUpperCase()}`, sig);
+      if (isWallet) {
+        if (!walletCtx.publicKey || !walletCtx.signTransaction) {
+          push("err", "Connect a wallet first");
+          return;
+        }
+        const sig = await placeBetFromWallet(new PublicKey(market.address), side === "yes", amount, walletCtx);
+        push("ok", `Your wallet bet ${amount} USDC on ${side.toUpperCase()}`, sig);
+        onPlaced();
+        return;
+      }
+      if (!demoWallet) return;
+      if (amount > (bal ?? 0)) {
+        push("err", `${demoWallet.label} has only ${(bal ?? 0).toFixed(0)} USDC`);
+        return;
+      }
+      const sig = await placeBet(new PublicKey(market.address), side === "yes", amount, demoWallet.keypair);
+      push("ok", `${demoWallet.label} bet ${amount} USDC on ${side.toUpperCase()}`, sig);
       onPlaced();
     } catch (e) {
       push("err", decodeAnchorError(e));
@@ -93,7 +113,7 @@ export function BetPanel({
           Wallet
           <select
             value={role}
-            onChange={(e) => setRole(e.target.value as DemoWallet["role"])}
+            onChange={(e) => setRole(e.target.value as Actor)}
             style={{
               marginLeft: 8,
               background: "var(--surface-2)",
@@ -108,6 +128,7 @@ export function BetPanel({
                 {w.label}
               </option>
             ))}
+            {walletCtx.connected && <option value="wallet">My wallet (Phantom)</option>}
           </select>
         </label>
         <span className="muted mono" style={{ fontSize: 12 }}>
@@ -117,8 +138,8 @@ export function BetPanel({
 
       <button
         className={`btn block ${side === "yes" ? "yes" : "no"}`}
-        disabled={pending || amount <= 0 || !wallet}
-        title={wallet ? undefined : "Demo wallets are local only; run the app locally to bet"}
+        disabled={disabled}
+        title={!isWallet && !demoWallet ? "Demo wallets are local only; run the app locally to bet" : undefined}
         onClick={submit}
       >
         {pending ? "Placing…" : `Place ${side.toUpperCase()} bet`}

@@ -8,6 +8,7 @@ import { MarketCard } from "./components/MarketCard";
 import { MatchTimeline } from "./components/MatchTimeline";
 import { PnlStrip } from "./components/PnlStrip";
 import { SettlementModal } from "./components/SettlementModal";
+import { WalletPanel } from "./components/WalletPanel";
 import { appConfig, isSeeded } from "./lib/config";
 import type { MarketView } from "./lib/market";
 import { pruneReceiptsToFixture, type SettlementReceipt } from "./lib/receipt";
@@ -118,6 +119,7 @@ export function App() {
         </div>
 
         <div className="col">
+          <WalletPanel />
           <FeedPanel mode={mode} update={update} events={events} receivedAt={receivedAt} />
           <LiveStatStrip update={update} />
           <PnlStrip markets={markets} />
