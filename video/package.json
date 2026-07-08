@@ -6,6 +6,7 @@
   "scripts": {
     "studio": "remotion studio",
     "render": "remotion render Video out/whistle-demo.mp4",
+    "render:social": "remotion render Social out/whistle-social.mp4",
     "still": "remotion still"
   },
   "dependencies": {

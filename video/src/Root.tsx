@@ -1,6 +1,8 @@
 import { getVideoMetadata } from "@remotion/media-utils";
 import { Composition, staticFile } from "remotion";
 import { FootageScrub } from "./compositions/FootageScrub";
+import { Social } from "./Social";
+import { SOCIAL_DURATION_FRAMES } from "./socialTimeline";
 import { FPS, HEIGHT, TOTAL_DURATION_FRAMES, WIDTH } from "./timeline";
 import { Video } from "./Video";
 
@@ -11,6 +13,15 @@ export const RemotionRoot = () => {
         id="Video"
         component={Video}
         durationInFrames={TOTAL_DURATION_FRAMES}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+      />
+      {/* The ~60s social teaser cut. */}
+      <Composition
+        id="Social"
+        component={Social}
+        durationInFrames={SOCIAL_DURATION_FRAMES}
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
