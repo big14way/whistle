@@ -16,7 +16,13 @@
 // Env: LOCK_SECS (100), HT_SECS (130), FT_SECS (200), REPLAY_MS (140000), DEMO_SEQ (989).
 
 import { BN } from "@coral-xyz/anchor";
-import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
+import {
+  PublicKey,
+  sendAndConfirmTransaction,
+  SystemProgram,
+  Transaction,
+  SYSVAR_RENT_PUBKEY,
+} from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, getOrCreateAssociatedTokenAccount, getAccount } from "@solana/spl-token";
 import { RPC_URL } from "../app/src/lib/constants";
 import { getConnection, getProgram, getProvider } from "./lib/anchor";
@@ -85,6 +91,30 @@ async function main() {
   ];
 
   // Top up the bettors so re running the scenario never fails on an empty wallet.
+  // Each bet creates a new Position PDA, which costs real SOL rent on top of the
+  // mock USDC stake, so repeated reseeds in one session (e.g. while recording)
+  // drain SOL even though the USDC balance looks fine. Keep both above a floor.
+  const SOL_FLOOR = 0.08 * 1e9;
+  for (const who of [bettorA, bettorB]) {
+    const bal = await retry(() => conn.getBalance(who.publicKey), "sol balance");
+    if (bal < SOL_FLOOR) {
+      const lamports = SOL_FLOOR - bal;
+      await retry(
+        () =>
+          sendAndConfirmTransaction(
+            conn,
+            new Transaction().add(
+              SystemProgram.transfer({ fromPubkey: deployer.publicKey, toPubkey: who.publicKey, lamports }),
+            ),
+            [deployer],
+            { commitment: "confirmed" },
+          ),
+        "sol top up",
+      );
+      console.log(`topped up ${who.publicKey.toBase58().slice(0, 8)} with ${(lamports / 1e9).toFixed(4)} SOL`);
+    }
+  }
+
   // The mock USDC mint authority lives in the demo wallets file exactly for this.
   const needA = SPECS.reduce((s, m) => s + m.yes, 0);
   const needB = SPECS.reduce((s, m) => s + m.no, 0);
