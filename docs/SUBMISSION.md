@@ -18,7 +18,7 @@ first (see "Before you submit").
 ### Link to Your Submission (most useful link)
 
 https://youtu.be/j2fOvpJEwlM (the track is judged heavily on the video). Live MVP:
-https://big14way.github.io/whistle/
+https://whistlesol.vercel.app
 
 ### Tweet Link (optional)
 
@@ -43,7 +43,7 @@ before the match is even over.
 
 ### Link to your live and working MVP
 
-https://big14way.github.io/whistle/
+https://whistlesol.vercel.app
 
 ### Link to your Live Demo Video
 
