@@ -17,8 +17,8 @@ first (see "Before you submit").
 
 ### Link to Your Submission (most useful link)
 
-Use the demo video link (the track is judged heavily on the video). If the video is
-not uploaded yet, use the live demo: https://big14way.github.io/whistle/
+https://youtu.be/j2fOvpJEwlM (the track is judged heavily on the video). Live MVP:
+https://big14way.github.io/whistle/
 
 ### Tweet Link (optional)
 
@@ -47,7 +47,7 @@ https://big14way.github.io/whistle/
 
 ### Link to your Live Demo Video
 
-Your uploaded YouTube or Loom link.
+https://youtu.be/j2fOvpJEwlM
 
 ### Project's Public Repository Link
 

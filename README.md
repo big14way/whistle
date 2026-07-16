@@ -8,7 +8,7 @@ markets, pools, and settled outcomes over the public RPC with the offline Simula
 feed. The demo wallets and TxLINE tokens never leave your machine, so betting and
 settling need a local run (`pnpm install && pnpm app`) or the demo video.
 
-**Demo video:** add your uploaded YouTube or Loom link here. A full cut and a 60 second
+**Demo video:** https://youtu.be/j2fOvpJEwlM — a full cut and a 60 second
 social cut are produced from `video/` (a Remotion project, see `video/README.md`).
 
 ## The problem
