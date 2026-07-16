@@ -144,6 +144,16 @@ export function BetPanel({
       >
         {pending ? "Placing…" : `Place ${side.toUpperCase()} bet`}
       </button>
+
+      {isWallet && walletCtx.connected && (
+        <div className="muted" style={{ fontSize: 12 }}>
+          Your wallet pays the network fee (~0.002 SOL). Need devnet SOL?{" "}
+          <a href="https://faucet.solana.com" target="_blank" rel="noreferrer">
+            Get some free
+          </a>
+          .
+        </div>
+      )}
     </div>
   );
 }
