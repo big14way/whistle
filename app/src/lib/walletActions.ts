@@ -92,7 +92,15 @@ export async function claimFromWallet(market: PublicKey, wallet: WalletSigner): 
   const vault = vaultPda(PROGRAM_ID, market);
   const vaultAuthority = vaultAuthorityPda(PROGRAM_ID, market);
   const ata = getAssociatedTokenAddressSync(mint, owner);
-  const tx = new Transaction().add(
+  const tx = new Transaction();
+  // A wallet that auto-closed its zero-balance USDC account after betting needs
+  // it recreated before the payout can land, or claim() fails on a missing account.
+  try {
+    await getAccount(connection, ata);
+  } catch {
+    tx.add(createAssociatedTokenAccountInstruction(owner, ata, owner, mint));
+  }
+  tx.add(
     await readProgram.methods
       .claim()
       .accountsPartial({

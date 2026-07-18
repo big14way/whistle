@@ -14,6 +14,9 @@ export interface LiveFixture {
   /// Full game goals, stat keys 1 (P1/home) and 2 (P2/away).
   homeGoals: number;
   awayGoals: number;
+  /// TxLINE participant ids, resolved to names/flags via lib/teams.
+  p1Id?: number;
+  p2Id?: number;
   /// Match minute derived from the clock, when present.
   minute?: number;
   clockRunning: boolean;
@@ -40,7 +43,9 @@ export function useLiveTicker(): LiveFixture[] {
 
     const connect = () => {
       if (stopped.current) return;
-      abort = new AbortController();
+      abort?.abort(); // never leave a prior stream running
+      const ctl = new AbortController();
+      abort = ctl;
       const client = new TxlineClient({ apiBase: appConfig.apiBase, ...getTxlineTokens() });
       client
         .streamScores(
@@ -57,6 +62,8 @@ export function useLiveTicker(): LiveFixture[] {
                   fixtureId: id,
                   homeGoals: num(stats[1]) ?? prev[id]?.homeGoals ?? 0,
                   awayGoals: num(stats[2]) ?? prev[id]?.awayGoals ?? 0,
+                  p1Id: num(evt?.Participant1Id ?? evt?.participant1Id) ?? prev[id]?.p1Id,
+                  p2Id: num(evt?.Participant2Id ?? evt?.participant2Id) ?? prev[id]?.p2Id,
                   minute: clockSec !== undefined ? Math.floor(clockSec / 60) : prev[id]?.minute,
                   clockRunning: Boolean(evt?.Clock?.Running ?? evt?.clock?.running),
                   receivedAt: Date.now(),
@@ -66,18 +73,22 @@ export function useLiveTicker(): LiveFixture[] {
               // one bad frame never kills the ticker
             }
           },
-          () => scheduleReconnect(),
-          abort.signal,
+          // streamScores swallows its own errors then RESOLVES, so reconnect
+          // only from .then — wiring onError here too would double every cycle.
+          () => undefined,
+          ctl.signal,
         )
-        .then(() => scheduleReconnect())
-        .catch(() => scheduleReconnect());
+        .then(() => scheduleReconnect());
     };
 
     const scheduleReconnect = () => {
-      if (stopped.current) return;
+      if (stopped.current || timer) return; // never stack timers
       const wait = backoff;
       backoff = Math.min(backoff * 2, 60000);
-      timer = setTimeout(connect, wait);
+      timer = setTimeout(() => {
+        timer = null;
+        connect();
+      }, wait);
     };
 
     // Only stream where a TxLINE path exists: injected/pasted tokens (local dev)

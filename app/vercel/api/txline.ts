@@ -44,13 +44,17 @@ async function mintJwt(): Promise<string> {
 /// upgrades its default Simulation feed to Replay when there is real data.
 async function replayHasData(fixtureId: string, apiToken: string): Promise<boolean> {
   try {
-    const jwt = cachedJwt ?? (await mintJwt());
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), 2500);
-    const res = await fetch(`${UPSTREAM}/api/scores/historical/${encodeURIComponent(fixtureId)}`, {
-      headers: { Authorization: `Bearer ${jwt}`, "X-Api-Token": apiToken, Accept: "text/event-stream" },
-      signal: ctl.signal,
-    });
+    const hit = (jwt: string) =>
+      fetch(`${UPSTREAM}/api/scores/historical/${encodeURIComponent(fixtureId)}`, {
+        headers: { Authorization: `Bearer ${jwt}`, "X-Api-Token": apiToken, Accept: "text/event-stream" },
+        signal: ctl.signal,
+      });
+    let res = await hit(cachedJwt ?? (await mintJwt()));
+    // A warm isolate's cached JWT is IP-bound-stale after an egress IP change;
+    // re-mint once so a live fixture is not misreported as having no data.
+    if (res.status === 401 || res.status === 403) res = await hit(await mintJwt());
     if (!res.ok || !res.body) {
       clearTimeout(timer);
       return false;
@@ -96,7 +100,10 @@ export default async function handler(req: Request): Promise<Response> {
     });
   }
 
-  if (req.method !== "GET" || !path.startsWith("scores/")) {
+  // Allowlist the read-only scores/* surface. Reject dot-segments: fetch
+  // normalizes `..`, so `scores/../../auth/guest/start` would otherwise pass the
+  // prefix check yet resolve outside /api/scores/ while still carrying our creds.
+  if (req.method !== "GET" || path.includes("..") || !path.startsWith("scores/")) {
     return new Response("forbidden", { status: 403 });
   }
 
