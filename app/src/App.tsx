@@ -4,6 +4,7 @@ import { AppShell } from "./components/AppShell";
 import { FeedPanel } from "./components/FeedPanel";
 import { FixtureHeader } from "./components/FixtureHeader";
 import { LiveStatStrip } from "./components/LiveStatStrip";
+import { LiveTicker } from "./components/LiveTicker";
 import { MarketCard } from "./components/MarketCard";
 import { MatchTimeline } from "./components/MatchTimeline";
 import { PnlStrip } from "./components/PnlStrip";
@@ -13,6 +14,7 @@ import { appConfig, isSeeded } from "./lib/config";
 import type { MarketView } from "./lib/market";
 import { pruneReceiptsToFixture, type SettlementReceipt } from "./lib/receipt";
 import { useDemoWallets } from "./state/useDemoWallets";
+import { useLiveTicker } from "./state/useLiveTicker";
 import { useMarkets } from "./state/useMarkets";
 import { useMatch } from "./state/useMatch";
 
@@ -20,6 +22,7 @@ export function App() {
   const { wallets, balances, refresh: refreshWallets, fund } = useDemoWallets();
   const { markets, loading: marketsLoading, refresh: refreshMarkets } = useMarkets();
   const { mode, setMode, update, error, fallbackNote, events, receivedAt } = useMatch();
+  const liveFixtures = useLiveTicker();
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
   const [settling, setSettling] = useState<MarketView | null>(null);
   // Scope receipts to the current demo fixture and prune any from older fixtures
@@ -79,6 +82,8 @@ export function App() {
           settle flow is in the demo video or a local run.
         </div>
       )}
+
+      <LiveTicker fixtures={liveFixtures} />
 
       <FixtureHeader update={update} />
       <div style={{ height: 16 }} />
