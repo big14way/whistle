@@ -3,10 +3,14 @@
 Trustless parametric prop settlement on Solana, settled by a Cross Program
 Invocation into the TxLINE `validate_stat` oracle.
 
-**Live read only demo:** https://whistlesol.vercel.app shows the real devnet
-markets, pools, and settled outcomes over the public RPC with the offline Simulation
-feed. The demo wallets and TxLINE tokens never leave your machine, so betting and
-settling need a local run (`pnpm install && pnpm app`) or the demo video.
+**Live demo:** https://whistlesol.vercel.app shows the real devnet markets, pools,
+and settled outcomes over the public RPC, and connects to any Solana wallet to bet
+and claim with self-funded mock USDC. A server side TxLINE proxy
+(`app/vercel/api/txline.ts`) streams the real Replay and Live feeds whenever the
+devnet fixture is broadcasting, falling back to the offline Simulation feed when it
+is not. The demo wallets and TxLINE settle keys never leave your machine, so the
+one-block settle itself needs a local run (`pnpm install && pnpm app`) or the demo
+video.
 
 **Demo video:** https://youtu.be/j2fOvpJEwlM — a full cut and a 60 second
 social cut are produced from `video/` (a Remotion project, see `video/README.md`).

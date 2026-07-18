@@ -1,0 +1,7 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/txline-api/:path*", "destination": "/api/txline?path=:path*" },
+    { "source": "/((?!.*\\.).*)", "destination": "/index.html" }
+  ]
+}

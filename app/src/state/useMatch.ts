@@ -18,6 +18,35 @@ const MAX_EVENTS = 24;
 
 export function useMatch() {
   const [mode, setMode] = useState<FeedMode>(defaultMode());
+  /// True once the user picks a mode by hand; the proxy auto-upgrade never
+  /// overrides an explicit choice.
+  const userPicked = useRef(false);
+  const pickMode = useCallback((m: FeedMode) => {
+    userPicked.current = true;
+    setMode(m);
+  }, []);
+
+  // Hosted deployments carry a TxLINE proxy (see app/vercel/api/txline) that
+  // holds the auth server side, so no browser tokens are needed there. Probe it
+  // once: when it answers AND the fixture's replay feed currently has frames
+  // (the devnet environment recycles fixtures between broadcast runs), upgrade
+  // the tokenless Simulation default to Replay of the real anchored data.
+  // GitHub Pages 404s and the dev proxy 403s the probe, so both keep their
+  // existing behavior.
+  useEffect(() => {
+    if (hasTxlineTokens() || appConfig.demoFixtureId == null) return;
+    let alive = true;
+    fetch(`${window.location.origin}/txline-api/__health?fixture=${appConfig.demoFixtureId}`)
+      .then(async (r) => {
+        if (!alive || !r.ok || userPicked.current) return;
+        const body = (await r.json().catch(() => null)) as { replay?: boolean } | null;
+        if (body?.replay) setMode((prev) => (prev === "simulation" ? "replay" : prev));
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
   const [update, setUpdate] = useState<MatchUpdate | null>(null);
   const [error, setError] = useState<string | null>(null);
   /// Set when a replay/live feed died before its first frame and the hook switched
@@ -84,5 +113,5 @@ export function useMatch() {
     return () => feed.stop();
   }, [mode, buildFeed]);
 
-  return { mode, setMode, update, error, fallbackNote, events, receivedAt };
+  return { mode, setMode: pickMode, update, error, fallbackNote, events, receivedAt };
 }
