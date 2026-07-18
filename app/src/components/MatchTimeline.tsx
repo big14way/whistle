@@ -6,7 +6,7 @@
 // moments while the match keeps moving, so wins land before the whistle.
 
 import type { CSSProperties } from "react";
-import type { MarketView } from "../lib/market";
+import { marketPhase, type MarketView } from "../lib/market";
 import type { SettlementReceipt } from "../lib/receipt";
 
 const FULL = 95; // minutes spanned by the track
@@ -20,10 +20,12 @@ export function MatchTimeline({
   markets,
   minute,
   receipts,
+  nowSec,
 }: {
   markets: MarketView[];
   minute: number;
   receipts: Record<string, SettlementReceipt>;
+  nowSec: number;
 }) {
   // Sort by settle minute, then cluster markets whose minutes fall within CLUSTER of
   // each other so near identical positions (for example two full game markets at
@@ -72,7 +74,10 @@ export function MatchTimeline({
           const stack = lane[m.address] ?? 0;
           const settled = m.state === "settledYes" || m.state === "settledNo";
           const voided = m.state === "voided";
-          const due = !settled && !voided && minute >= mn;
+          // Due needs both the narrative (the playhead has passed the node) and
+          // the chain (the market is actually resolvable at wall clock), so the
+          // sprinting Simulation clock cannot flag still open markets.
+          const due = !settled && !voided && minute >= mn && marketPhase(m, nowSec) === "resolvable";
           const cls = settled ? "settled" : voided ? "voided" : due ? "due" : "open";
           const r = receipts[m.address];
           const pot = m.totalYes + m.totalNo;

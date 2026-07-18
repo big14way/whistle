@@ -9,7 +9,7 @@ import type { FeedMode, MatchUpdate } from "../lib/txline/feed";
 import { resolveTeam, teamFlag } from "../lib/teams";
 
 const MODE_LABEL: Record<FeedMode, string> = {
-  live: "Live SSE",
+  live: "Live",
   replay: "Replay",
   simulation: "Simulation",
 };
@@ -37,7 +37,9 @@ export function FeedPanel({
     return () => clearInterval(t);
   }, []);
 
-  const state = freshness(receivedAt, now);
+  // A finished one-shot feed (replay and simulation stop at full time) is done,
+  // not stale; keep the pill healthy instead of decaying to a grey warning.
+  const state = update?.gameState === 5 ? "fresh" : freshness(receivedAt, now);
   const home = resolveTeam(update?.p1Id);
   const away = resolveTeam(update?.p2Id);
   const teamName = (side: "home" | "away") => {

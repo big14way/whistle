@@ -214,8 +214,9 @@ export function SettlementModal({
               {error}
             </p>
             <div className="footnote">
-              The real settle needs a TxLINE proof: set a JWT and API token (Settings) and use a real fixture with
-              anchored roots. The market state is unchanged, so this is safe to retry.
+              The real settle needs a TxLINE proof and the local Settler key, so it runs from a local checkout
+              (see the README) against a fixture with anchored roots. The market state is unchanged, so this is safe
+              to retry.
             </div>
             <button className="btn ghost block" style={{ marginTop: 12 }} onClick={onClose}>
               Close

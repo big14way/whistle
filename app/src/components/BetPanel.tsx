@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PublicKey } from "@solana/web3.js";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { placeBet } from "../lib/actions";
@@ -28,10 +28,21 @@ export function BetPanel({
 }) {
   const [side, setSide] = useState<"yes" | "no">("yes");
   const [amount, setAmount] = useState(10);
-  const [role, setRole] = useState<Actor>("bettorA");
+  // On the public deployment there are no demo wallets, so betting is done from
+  // the visitor's own wallet: default the actor to "wallet" there so the primary
+  // CTA is a live button, not a disabled one hidden behind a menu.
+  const noDemo = wallets.length === 0;
+  const [role, setRole] = useState<Actor>(noDemo ? "wallet" : "bettorA");
   const [pending, setPending] = useState(false);
   const { push } = useToasts();
   const walletCtx = useWallet();
+
+  // Keep the actor coherent as the demo wallets load or the browser wallet
+  // connects/disconnects, without overriding a deliberate choice mid-session.
+  useEffect(() => {
+    if (noDemo) setRole("wallet");
+    else setRole((prev) => (prev === "wallet" && !walletCtx.connected ? "bettorA" : prev));
+  }, [noDemo, walletCtx.connected]);
 
   // Default wallet by side to make the demo flow obvious, but keep a connected
   // browser wallet selected if the user chose it.
@@ -109,28 +120,36 @@ export function BetPanel({
       </div>
 
       <div className="between">
-        <label className="muted" style={{ fontSize: 13 }}>
-          Wallet
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as Actor)}
-            style={{
-              marginLeft: 8,
-              background: "var(--surface-2)",
-              color: "var(--text)",
-              border: "1px solid var(--border)",
-              borderRadius: 8,
-              padding: "4px 8px",
-            }}
-          >
-            {wallets.map((w) => (
-              <option key={w.role} value={w.role}>
-                {w.label}
-              </option>
-            ))}
-            {walletCtx.connected && <option value="wallet">My wallet (Phantom)</option>}
-          </select>
-        </label>
+        {/* One actor on the public site (your wallet) means no picker; the demo
+            build shows the demo wallets plus the connected wallet. */}
+        {noDemo ? (
+          <span className="muted" style={{ fontSize: 13 }}>
+            Betting from {walletCtx.connected ? "your connected wallet" : "your wallet once connected"}
+          </span>
+        ) : (
+          <label className="muted" style={{ fontSize: 13 }}>
+            Wallet
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as Actor)}
+              style={{
+                marginLeft: 8,
+                background: "var(--surface-2)",
+                color: "var(--text)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                padding: "4px 8px",
+              }}
+            >
+              {wallets.map((w) => (
+                <option key={w.role} value={w.role}>
+                  {w.label}
+                </option>
+              ))}
+              {walletCtx.connected && <option value="wallet">My wallet</option>}
+            </select>
+          </label>
+        )}
         <span className="muted mono" style={{ fontSize: 12 }}>
           if {side.toUpperCase()} wins: {payout.toFixed(2)} USDC
         </span>
@@ -139,10 +158,20 @@ export function BetPanel({
       <button
         className={`btn block ${side === "yes" ? "yes" : "no"}`}
         disabled={disabled}
-        title={!isWallet && !demoWallet ? "Demo wallets are local only; run the app locally to bet" : undefined}
+        title={
+          isWallet && !walletCtx.connected
+            ? "Connect a wallet (top right) to bet"
+            : !isWallet && !demoWallet
+              ? "Demo wallets are local only; run the app locally to bet"
+              : undefined
+        }
         onClick={submit}
       >
-        {pending ? "Placing…" : `Place ${side.toUpperCase()} bet`}
+        {isWallet && !walletCtx.connected
+          ? "Connect wallet to bet"
+          : pending
+            ? "Placing…"
+            : `Place ${side.toUpperCase()} bet`}
       </button>
 
       {isWallet && walletCtx.connected && (

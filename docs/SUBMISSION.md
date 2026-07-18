@@ -1,17 +1,11 @@
 # Superteam Earn submission, Prediction Markets and Settlement (TxODDS)
 
-Everything below is ready to paste into the submission form. Two things must happen
-first (see "Before you submit").
+Everything below is ready to paste into the submission form.
 
-## Before you submit
-
-1. Upload the demo video. The file is `whistle-demo.mp4` (on your Desktop, and in
-   `video/out/`). Put it on YouTube as Unlisted, or Loom, so anyone with the link can
-   view it. Copy the link.
-2. Paste that link into the README where it says "Demo video: add your uploaded link"
-   and commit, so the repo carries it too.
-3. (Optional) Post the 60 second `whistle-social.mp4` on X and keep the tweet link for
-   the Tweet field.
+Reminder: the "Link to your Live Demo Video" must be the full judge cut
+(`video/out/whistle-demo.mp4`, ~4 min), not the 60 second social cut — the track is
+judged heavily on the video. The social cut (`whistle-social.mp4`) is for the
+optional Tweet field.
 
 ## Form fields (copy paste)
 
@@ -61,6 +55,19 @@ https://github.com/big14way/whistle#readme
 guide for the ~500 lines of resolution logic, and a roadmap. Deeper docs:
 docs/SETTLEMENT.md for the settlement and safety spec, docs/ORACLE_FACTS.md for the
 verified on chain oracle values.)
+
+Specific TxLINE endpoints used:
+- `POST /auth/guest/start` — mint a guest JWT (the auth bearer for data calls).
+- `POST /api/token/activate` — activate the API token with the wallet signature over
+  `{txSig}:{leagues}:{jwt}` (sent as `X-Api-Token` on data calls).
+- `GET /api/scores/snapshot/{fixtureId}` — fixture snapshot (teams, state, start time).
+- `GET /api/scores/historical/{fixtureId}` — historical SSE replay of anchored events.
+- `GET /api/scores/stream` — live SSE scores stream (powers the live match ticker).
+- `GET /api/scores/stat-validation?fixtureId&seq&statKey[&statKey2]` — the proof shape
+  (statToProve, eventStatRoot, subTreeProof) the settle transaction submits on chain.
+- On chain: a CPI into the txoracle `validate_stat` instruction (devnet program
+  `6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J`), whose Borsh bool return is read with
+  `get_return_data` — this is what settles each market trustlessly.
 
 ### Link to your Project's X Profile or an X post about your Project
 

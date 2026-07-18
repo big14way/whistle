@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "description": "Trustless parametric prop settlement on Solana, settled by a CPI into the TxLINE validate_stat oracle.",
+  "license": "MIT",
+  "repository": "github:big14way/whistle",
+  "homepage": "https://whistlesol.vercel.app",
   "scripts": {
     "mock-usdc": "tsx scripts/create-mock-usdc.ts",
     "seed": "tsx scripts/seed-demo.ts",

@@ -8,6 +8,9 @@ import type { WalletBalances } from "../state/useDemoWallets";
 
 function fmtCountdown(sec: number): string {
   if (sec <= 0) return "0:00";
+  // The public markets stay open for days; a five digit M:SS reads as a bug.
+  if (sec >= 86400) return `${Math.floor(sec / 86400)}d ${Math.floor((sec % 86400) / 3600)}h`;
+  if (sec >= 3600) return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m`;
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
   return `${m}:${s.toString().padStart(2, "0")}`;

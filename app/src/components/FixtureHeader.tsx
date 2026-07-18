@@ -1,11 +1,17 @@
 import { appConfig } from "../lib/config";
 import { resolveTeam, teamFlag } from "../lib/teams";
 import { PHASE_DISPLAY, VOID_PHASES } from "../lib/txline/statKeys";
-import type { MatchUpdate } from "../lib/txline/feed";
+import type { FeedMode, MatchUpdate } from "../lib/txline/feed";
 
 const IN_PLAY = new Set([2, 4, 7, 9, 12]); // H1, H2, ET1, ET2, PE
 
-export function FixtureHeader({ update }: { update: MatchUpdate | null }) {
+const SOURCE_LABEL: Record<FeedMode, string> = {
+  live: "Live",
+  replay: "Replay of anchored data",
+  simulation: "Simulated",
+};
+
+export function FixtureHeader({ update, mode }: { update: MatchUpdate | null; mode: FeedMode }) {
   const homeTeam = resolveTeam(update?.p1Id);
   const awayTeam = resolveTeam(update?.p2Id);
   const home = homeTeam?.name ?? update?.homeName ?? "Home";
@@ -44,9 +50,12 @@ export function FixtureHeader({ update }: { update: MatchUpdate | null }) {
       </div>
       <div className="grow" />
       <div className="row">
-        <span className={`pill ${live ? "live" : voidish ? "locked" : ""}`}>
-          {live && <span className="live-dot" aria-hidden="true" />}
+        <span className={`pill ${mode === "simulation" ? "" : live ? "live" : voidish ? "locked" : ""}`}>
+          {live && mode !== "simulation" && <span className="live-dot" aria-hidden="true" />}
           {phaseLabel}
+        </span>
+        <span className="pill" title="This room replays a completed fixture; live matches appear in the ticker above">
+          {SOURCE_LABEL[mode]}
         </span>
         {update?.minute != null && <span className="pill mono">{update.minute}'</span>}
         <span className="pill mono" title="Fixture id">

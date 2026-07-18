@@ -15,8 +15,9 @@ export function ConnectWalletButton() {
         className="btn ghost sm mono"
         onClick={() => disconnect()}
         title="Disconnect wallet"
+        aria-label={`Disconnect wallet ${b58}`}
       >
-        {b58.slice(0, 4)}…{b58.slice(-4)}
+        {b58.slice(0, 4)}…{b58.slice(-4)} <span aria-hidden="true">✕</span>
       </button>
     );
   }

@@ -26,13 +26,15 @@ export function useMarkets() {
       }),
     );
     out.sort((a, b) => a.marketId - b.marketId);
-    setMarkets(out);
+    // A public devnet RPC 429 burst can fail every fetch at once; keep showing
+    // the last good list instead of wiping the page to "No markets found".
+    setMarkets((prev) => (out.length === 0 && prev.length > 0 ? prev : out));
     setLoading(false);
   }, []);
 
   useEffect(() => {
     refresh().catch(() => undefined);
-    const t = setInterval(() => refresh().catch(() => undefined), 8000);
+    const t = setInterval(() => refresh().catch(() => undefined), 12000);
     return () => clearInterval(t);
   }, [refresh]);
 

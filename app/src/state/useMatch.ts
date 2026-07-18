@@ -84,11 +84,35 @@ export function useMatch() {
       return;
     }
     feedRef.current = feed;
+
+    // A Live/Replay feed for a fixture that is not broadcasting stays healthy but
+    // silent (LiveSseFeed filters to the demo fixture), which would freeze the room
+    // with no error to trigger the fallback. Bound the wait: no first frame in time
+    // means "not broadcasting" — fall back to Simulation with a clear note.
+    let firstFrameTimer: ReturnType<typeof setTimeout> | null = null;
+    if (mode !== "simulation") {
+      firstFrameTimer = setTimeout(() => {
+        if (lastUpdate.current === null) {
+          setFallbackNote(
+            `Fixture #${appConfig.demoFixtureId} isn't broadcasting on TxLINE right now. Showing the offline Simulation; live matches appear in the ticker above.`,
+          );
+          setMode("simulation");
+        }
+      }, 9000);
+    }
+    const clearFirstFrame = () => {
+      if (firstFrameTimer) {
+        clearTimeout(firstFrameTimer);
+        firstFrameTimer = null;
+      }
+    };
+
     feed.start(
       (u) => {
         // First frame of a working replay/live feed: any earlier fallback note is
         // stale, the real feed is healthy again.
         if (mode !== "simulation" && lastUpdate.current === null) setFallbackNote(null);
+        clearFirstFrame();
         const fresh = diffEvents(lastUpdate.current, u);
         lastUpdate.current = u;
         setUpdate(u);
@@ -101,8 +125,9 @@ export function useMatch() {
         // Make the promised fallback real: switch to the offline Simulation, and
         // record what happened so the UI can say so.
         if (mode !== "simulation" && lastUpdate.current === null) {
+          clearFirstFrame();
           setFallbackNote(
-            `TxLINE ${mode} feed unavailable (${msg}). Switched to the offline Simulation; re-select Replay once the API recovers.`,
+            `TxLINE ${mode} feed unavailable (${msg}). Switched to the offline Simulation; re-select ${mode} once the API recovers.`,
           );
           setMode("simulation");
           return;
@@ -110,7 +135,10 @@ export function useMatch() {
         setError(msg);
       },
     );
-    return () => feed.stop();
+    return () => {
+      clearFirstFrame();
+      feed.stop();
+    };
   }, [mode, buildFeed]);
 
   return { mode, setMode: pickMode, update, error, fallbackNote, events, receivedAt };

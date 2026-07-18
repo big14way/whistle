@@ -13,6 +13,7 @@ import { WalletPanel } from "./components/WalletPanel";
 import { appConfig, isSeeded } from "./lib/config";
 import type { MarketView } from "./lib/market";
 import { pruneReceiptsToFixture, type SettlementReceipt } from "./lib/receipt";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useDemoWallets } from "./state/useDemoWallets";
 import { useLiveTicker } from "./state/useLiveTicker";
 import { useMarkets } from "./state/useMarkets";
@@ -23,6 +24,7 @@ export function App() {
   const { markets, loading: marketsLoading, refresh: refreshMarkets } = useMarkets();
   const { mode, setMode, update, error, fallbackNote, events, receivedAt } = useMatch();
   const liveFixtures = useLiveTicker();
+  const { connected: walletConnected } = useWallet();
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
   const [settling, setSettling] = useState<MarketView | null>(null);
   // Scope receipts to the current demo fixture and prune any from older fixtures
@@ -77,17 +79,25 @@ export function App() {
       )}
       {isSeeded && wallets.length === 0 && (
         <div className="banner" style={{ marginBottom: 16 }}>
-          Live devnet deployment. Connect a wallet (top right), press Fund in the Your wallet panel for mock USDC,
-          and bet from your own wallet on any market below. Settling needs TxLINE tokens (IP bound), so the full
-          settle flow is in the demo video or a local run.
+          {walletConnected ? (
+            <>
+              Wallet connected. Press <strong>Fund</strong> in the Your wallet panel for mock USDC, then bet and claim
+              on any market below. The one-block on-chain settlement is shown in the demo video.
+            </>
+          ) : (
+            <>
+              Live devnet demo. <strong>Connect a wallet</strong> (top right) to self-fund mock USDC and bet on real
+              on-chain markets; the one-block settlement is shown in the demo video.
+            </>
+          )}
         </div>
       )}
 
       <LiveTicker fixtures={liveFixtures} />
 
-      <FixtureHeader update={update} />
+      <FixtureHeader update={update} mode={mode} />
       <div style={{ height: 16 }} />
-      <MatchTimeline markets={markets} minute={minute} receipts={receipts} />
+      <MatchTimeline markets={markets} minute={minute} receipts={receipts} nowSec={nowSec} />
 
       <div className="layout" style={{ marginTop: 24 }}>
         <div className="col">

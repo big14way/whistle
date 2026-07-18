@@ -2,7 +2,7 @@
 
 ## The public faucet key is intentional
 
-The public demo (https://big14way.github.io/whistle/) ships exactly one keypair,
+The public demo (https://whistlesol.vercel.app) ships exactly one keypair,
 `app/src/faucet.public.json`, pubkey `6nuFo7QAJAspQH62MXBP3Dwk7fmdCTEDwxx1vaMhvJCe`.
 This is deliberate: it lets any visitor self fund mock USDC and bet from their own
 wallet without the operator handing out anything.
@@ -39,7 +39,20 @@ permissionless but the raw authority is never exposed.
 
 The deployer key, the demo wallet secret keys, the TxLINE guest tokens, and the paid
 Alchemy RPC key are all gitignored, never committed, and never in git history. The
-public bundle is built by `scripts/build-pages.sh`, which moves the local secret and
-generated config files aside, builds with the public devnet RPC, and then greps the
-built bundle for the actual RPC key and TxLINE token values and aborts the build if
-either is present. So even a mistake cannot publish a real secret.
+public bundle is built by `scripts/build-pages.sh` (GitHub Pages) and
+`scripts/build-vercel.sh` (Vercel), which move the local secret and generated config
+files aside, build with the public devnet RPC, and then grep the built bundle for the
+actual RPC key and TxLINE token values and abort the build if either is present. So
+even a mistake cannot publish a real secret.
+
+## The hosted TxLINE proxy keeps the token server side
+
+The Vercel deployment adds a small Edge function (`app/vercel/api/txline.ts`) so the
+public site can stream the real Replay and Live feeds. The TxLINE guest JWT is IP
+bound, so the function mints its own guest JWT (the mint and the data call then share
+an egress IP) and injects the activated API token from the `TXLINE_API_TOKEN` Vercel
+environment variable. That token therefore lives only in the server environment and
+never ships in the client bundle (the build guard above still greps for it). The
+proxy allowlists read-only `GET scores/*` and rejects dot-segment path traversal, so
+it exposes only the free-tier devnet scores surface — no write endpoints, no auth
+endpoints, nothing that can mutate on-chain or off-chain state.

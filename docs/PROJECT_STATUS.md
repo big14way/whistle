@@ -1,5 +1,9 @@
 # Whistle: project status
 
+> Historical snapshot from the Milestone 0 phase. For the current, authoritative
+> state (Vercel deployment, wallet connect, live TxLINE proxy, demo fixture
+> **17588245** Croatia–Ghana) see the top-level `README.md`.
+
 A snapshot of what is built, what is proven, and where we are. For the settlement
 trust model see SETTLEMENT.md, for the demo see DEMO_SCRIPT.md, for the confirmed
 oracle facts see ORACLE_FACTS.md, and for the UI see FRONTEND_DESIGN.md.

@@ -35,17 +35,26 @@ export function AppShell({
   return (
     <>
       <header className="topbar">
-        <h1 className="wordmark">
-          <span className="dot" aria-hidden="true" />
-          Whistle
-        </h1>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+          <h1 className="wordmark" style={{ margin: 0 }}>
+            <span className="dot" aria-hidden="true" />
+            Whistle
+          </h1>
+          <span className="muted brand-sub" style={{ fontSize: 12, lineHeight: 1.2 }}>
+            Prop bets settled on-chain in one block, proven by the TxLINE oracle
+          </span>
+        </div>
         <ClusterBadge />
         <div className="grow" />
         <WalletSwitcher wallets={wallets} balances={balances} onFund={onFund} />
         <FeedModeToggle mode={mode} onChange={onMode} />
-        <button className="btn ghost sm" onClick={setTokens} title="Set TxLINE tokens for Replay, Live, and settle">
-          {hasTxlineTokens() ? "Tokens set" : "Set tokens"}
-        </button>
+        {/* Pasting a JWT via window.prompt is a local-dev affordance; the hosted
+            site gets its feeds through the server-side proxy, so hide it there. */}
+        {import.meta.env.DEV && (
+          <button className="btn ghost sm" onClick={setTokens} title="Set TxLINE tokens for Replay, Live, and settle">
+            {hasTxlineTokens() ? "Tokens set" : "Set tokens"}
+          </button>
+        )}
         <ConnectWalletButton />
       </header>
       <div className="shell">{children}</div>

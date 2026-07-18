@@ -8,9 +8,9 @@ and settled outcomes over the public RPC, and connects to any Solana wallet to b
 and claim with self-funded mock USDC. A server side TxLINE proxy
 (`app/vercel/api/txline.ts`) streams the real Replay and Live feeds whenever the
 devnet fixture is broadcasting, falling back to the offline Simulation feed when it
-is not. The demo wallets and TxLINE settle keys never leave your machine, so the
-one-block settle itself needs a local run (`pnpm install && pnpm app`) or the demo
-video.
+is not. The demo wallet keys and TxLINE tokens never leave your machine, so the
+one-block settle itself needs a local run (`pnpm install && pnpm app`, then
+`pnpm txline-auth` and "Set tokens") or the demo video.
 
 **Demo video:** https://youtu.be/j2fOvpJEwlM — a full cut and a 60 second
 social cut are produced from `video/` (a Remotion project, see `video/README.md`).
@@ -72,8 +72,10 @@ programs/whistle/        the on chain program (Rust, Anchor 0.31)
 docs/
   ORACLE_FACTS.md        confirmed values from Milestone 0
   SETTLEMENT.md          plain language settlement and safety spec
+  SECURITY.md            faucet key rationale and the server side proxy token model
   DEMO_SCRIPT.md         the video script (v3, judge cut)
-scripts/                 create-mock-usdc, seed-demo, fetch-validation, probe-oracle
+scripts/                 seed-demo, txline-auth, find-fixture, build-pages, build-vercel, probe-oracle
+app/vercel/              vercel.json plus the TxLINE Edge proxy for the hosted feeds
 tests/whistle.ts         full lifecycle test including the real validate_stat CPI
 app/                     Vite + React + TypeScript frontend
 video/                   Remotion project that renders the demo and social videos
@@ -271,9 +273,10 @@ Whistle is a working proof of the settlement primitive, deployed and settling on
 What turns it into a product:
 
 Near term
-- Wallet connect is live for betting: connect Phantom or any Wallet Standard wallet, fund
-  with mock USDC, and place bets from your own wallet (pick "My wallet" in any market). Next
-  is settling and claiming from the connected wallet and a real, non mock USDC path.
+- Wallet connect is live for betting and claiming: connect Phantom or any Wallet Standard
+  wallet, self fund mock USDC, place bets, and claim winnings from your own wallet. Next is
+  settling from the connected wallet (today the settle key is local only) and a real, non
+  mock USDC path.
 - Permissionless market creation in the UI: pick a fixture, a stat, a threshold, and a lock
   time; the predicate and the program owned vault are derived on chain.
 - Harden the public faucet: replace the exposed mock mint authority key with a program

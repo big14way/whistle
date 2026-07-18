@@ -1,14 +1,14 @@
 import type { FeedMode } from "../lib/txline/feed";
 
 const MODES: { mode: FeedMode; label: string }[] = [
-  { mode: "live", label: "Live SSE" },
+  { mode: "live", label: "Live" },
   { mode: "replay", label: "Replay" },
   { mode: "simulation", label: "Simulation" },
 ];
 
 export function FeedModeToggle({ mode, onChange }: { mode: FeedMode; onChange: (m: FeedMode) => void }) {
   return (
-    <div className="segmented" role="group" aria-label="Feed mode" style={{ width: 280 }}>
+    <div className="segmented" role="group" aria-label="Feed mode" style={{ width: "min(280px, 100%)" }}>
       {MODES.map((m) => (
         <button
           key={m.mode}
