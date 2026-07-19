@@ -11,7 +11,7 @@ optional Tweet field.
 
 ### Link to Your Submission (most useful link)
 
-https://youtu.be/j2fOvpJEwlM (the track is judged heavily on the video). Live MVP:
+https://youtu.be/P2H0fPXBpJw (the track is judged heavily on the video). Live MVP:
 https://whistlesol.vercel.app
 
 ### Tweet Link (optional)
@@ -41,7 +41,7 @@ https://whistlesol.vercel.app
 
 ### Link to your Live Demo Video
 
-https://youtu.be/j2fOvpJEwlM
+https://youtu.be/P2H0fPXBpJw
 
 ### Project's Public Repository Link
 

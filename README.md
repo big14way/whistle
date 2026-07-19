@@ -12,7 +12,7 @@ is not. The demo wallet keys and TxLINE tokens never leave your machine, so the
 one-block settle itself needs a local run (`pnpm install && pnpm app`, then
 `pnpm txline-auth` and "Set tokens") or the demo video.
 
-**Demo video:** https://youtu.be/j2fOvpJEwlM — a full cut and a 60 second
+**Demo video:** https://youtu.be/P2H0fPXBpJw — a full cut and a 60 second
 social cut are produced from `video/` (a Remotion project, see `video/README.md`).
 
 ## The problem
